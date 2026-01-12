@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --background: #0f0f12;
+  --foreground: #e4e4e7;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Typing area character styles */
+.char-correct {
+  @apply text-correct;
+}
+
+.char-error {
+  @apply text-error bg-error/20 rounded-sm;
+}
+
+.char-current {
+  @apply border-b-2 border-accent animate-pulse;
+}
+
+.char-pending {
+  @apply text-pending;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #444;
+}
+
+/* Focus styles */
+*:focus {
+  outline: none;
+}
+
+*:focus-visible {
+  @apply ring-2 ring-accent ring-offset-2 ring-offset-surface;
+}
