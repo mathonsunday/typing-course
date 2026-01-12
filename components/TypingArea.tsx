@@ -9,6 +9,9 @@ import type { CharacterStats } from '@/lib/storage'
 import FingerGuide from './FingerGuide'
 import DailyGoal from './DailyGoal'
 import AccentHint from './AccentHint'
+import WPMContext from './WPMContext'
+import SelfAssessment from './SelfAssessment'
+import type { ConfidenceLevel } from './SelfAssessment'
 
 interface TypingAreaProps {
   text: string
@@ -320,11 +323,6 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
     processCharacter(char)
   }, [processCharacter])
   
-  // Calculate current accuracy
-  const accuracy = currentIndex > 0 
-    ? ((correctCountRef.current / currentIndex) * 100).toFixed(1)
-    : '100.0'
-  
   // Render a single line with character styling
   const renderLine = (line: { text: string; startIndex: number }, lineIndex: number) => {
     return (
@@ -360,10 +358,6 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
           <div>
             <span className="text-zinc-500">WPM</span>{' '}
             <span className="text-zinc-100 font-medium">{currentWPM}</span>
-          </div>
-          <div>
-            <span className="text-zinc-500">Accuracy</span>{' '}
-            <span className="text-zinc-100 font-medium">{accuracy}%</span>
           </div>
           <div>
             <span className="text-zinc-500">Progress</span>{' '}
@@ -447,37 +441,17 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
         {isComplete && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-surface-raised/95 rounded-xl">
             <div className="text-center">
-              <h2 className="text-2xl font-semibold text-zinc-100 mb-4">
+              <h2 className="text-2xl font-semibold text-zinc-100 mb-2">
                 Session Complete!
               </h2>
-              <div className="flex items-center gap-8 mb-6 text-lg">
-                <div>
-                  <div className="text-zinc-500 text-sm">WPM</div>
-                  <div className="text-accent-bright font-semibold text-2xl">
-                    {currentWPM}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-zinc-500 text-sm">Accuracy</div>
-                  <div className="text-accent-bright font-semibold text-2xl">
-                    {accuracy}%
-                  </div>
-                </div>
-                <div>
-                  <div className="text-zinc-500 text-sm">Characters</div>
-                  <div className="text-accent-bright font-semibold text-2xl">
-                    {text.length}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-zinc-500 text-sm">Errors</div>
-                  <div className="text-accent-bright font-semibold text-2xl">
-                    {errors.size}
-                  </div>
-                </div>
+              <div className="text-5xl font-bold text-accent-bright mb-2">
+                {currentWPM} <span className="text-xl text-zinc-400">WPM</span>
               </div>
-              <p className="text-zinc-500">
-                Press <kbd className="px-2 py-1 bg-surface rounded text-zinc-300">Enter</kbd> to restart
+              <p className="text-zinc-500 text-sm mb-4">
+                {text.length} characters in {Math.round(elapsedMs / 1000)}s
+              </p>
+              <p className="text-zinc-600 text-xs">
+                Press <kbd className="px-2 py-1 bg-surface rounded text-zinc-400">Enter</kbd> to restart
               </p>
             </div>
           </div>
@@ -503,6 +477,20 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
       {settings.showFingerGuide && !isComplete && (
         <div className="mt-4">
           <FingerGuide currentChar={text[currentIndex]} />
+        </div>
+      )}
+      
+      {/* Post-session reflection */}
+      {isComplete && (
+        <div className="mt-6 space-y-4">
+          <WPMContext wpm={currentWPM} />
+          <SelfAssessment 
+            wpm={currentWPM} 
+            onAssessment={(confidence: ConfidenceLevel) => {
+              // TODO: Save assessment to progress tracking
+              console.log('Self-assessment:', confidence, 'at', currentWPM, 'WPM')
+            }}
+          />
         </div>
       )}
     </div>
