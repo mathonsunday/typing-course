@@ -7,6 +7,7 @@ import { playKeystrokeSound, playErrorSound, playCompletionSound, ensureAudioRea
 import { trackKeystroke, createSession, calculateWPM } from '@/lib/analytics'
 import type { CharacterStats } from '@/lib/storage'
 import FingerGuide from './FingerGuide'
+import DailyGoal from './DailyGoal'
 
 interface TypingAreaProps {
   text: string
@@ -27,6 +28,7 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
   const [startTime, setStartTime] = useState<number | null>(null)
   const [isComplete, setIsComplete] = useState(false)
   const [currentWPM, setCurrentWPM] = useState(0)
+  const [elapsedMs, setElapsedMs] = useState(0)
   
   // Analytics tracking
   const characterAccuracyRef = useRef<Record<string, CharacterStats>>({})
@@ -109,6 +111,7 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
     setStartTime(null)
     setIsComplete(false)
     setCurrentWPM(0)
+    setElapsedMs(0)
     characterAccuracyRef.current = {}
     bigramAccuracyRef.current = {}
     correctCountRef.current = 0
@@ -120,12 +123,13 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
     resetSession()
   }, [text, resetSession])
   
-  // Update WPM every second during typing
+  // Update WPM and elapsed time every second during typing
   useEffect(() => {
     if (!startTime || isComplete) return
     
     const interval = setInterval(() => {
       const elapsed = Date.now() - startTime
+      setElapsedMs(elapsed)
       setCurrentWPM(calculateWPM(correctCountRef.current, elapsed))
     }, 1000)
     
@@ -279,6 +283,10 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
             <span className="text-zinc-100 font-medium">
               {currentLineIndex + 1}/{lines.length} lines
             </span>
+          </div>
+          <div className="border-l border-zinc-700 pl-6">
+            <span className="text-zinc-500">Daily</span>{' '}
+            <DailyGoal variant="compact" currentSessionMs={elapsedMs} />
           </div>
         </div>
         <div className="flex items-center gap-4">

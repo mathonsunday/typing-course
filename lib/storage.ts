@@ -32,11 +32,18 @@ export interface UserSettings {
   customTextLibrary: string[]
 }
 
+export interface DailyProgress {
+  date: string // YYYY-MM-DD format
+  totalTimeMs: number
+}
+
 export interface UserProgress {
   sessions: TypingSession[]
   aggregateCharacterAccuracy: Record<string, CharacterStats>
   aggregateBigramAccuracy: Record<string, CharacterStats>
   settings: UserSettings
+  dailyGoalMinutes: number
+  dailyProgress: DailyProgress
 }
 
 const STORAGE_KEY = 'typing-course-progress'
@@ -51,11 +58,20 @@ const DEFAULT_SETTINGS: UserSettings = {
   customTextLibrary: [],
 }
 
+function getTodayDateString(): string {
+  return new Date().toISOString().split('T')[0]
+}
+
 const DEFAULT_PROGRESS: UserProgress = {
   sessions: [],
   aggregateCharacterAccuracy: {},
   aggregateBigramAccuracy: {},
   settings: DEFAULT_SETTINGS,
+  dailyGoalMinutes: 30,
+  dailyProgress: {
+    date: getTodayDateString(),
+    totalTimeMs: 0,
+  },
 }
 
 /**

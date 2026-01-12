@@ -6,6 +6,7 @@ import TypingArea from '@/components/TypingArea'
 import TextInput from '@/components/TextInput'
 import SettingsPanel from '@/components/SettingsPanel'
 import SessionStats from '@/components/SessionStats'
+import DailyGoal from '@/components/DailyGoal'
 
 function TypingApp() {
   const [practiceText, setPracticeText] = useState<string | null>(null)
@@ -35,6 +36,13 @@ function TypingApp() {
       
       {/* Main content */}
       <div className="max-w-5xl mx-auto px-6 py-12">
+        {/* Daily goal - shown on home screen */}
+        {!practiceText && (
+          <div className="max-w-4xl mx-auto mb-8">
+            <DailyGoal variant="full" />
+          </div>
+        )}
+        
         {/* Text input / selector */}
         <TextInput 
           onSubmit={setPracticeText} 

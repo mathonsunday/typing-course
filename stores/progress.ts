@@ -2,7 +2,11 @@
 
 import { atom } from 'jotai'
 import { atomWithStorage } from 'jotai/utils'
-import type { UserProgress, UserSettings, TypingSession } from '@/lib/storage'
+import type { UserProgress, UserSettings, TypingSession, DailyProgress } from '@/lib/storage'
+
+function getTodayDateString(): string {
+  return new Date().toISOString().split('T')[0]
+}
 
 // Default values
 const DEFAULT_SETTINGS: UserSettings = {
@@ -20,6 +24,11 @@ const DEFAULT_PROGRESS: UserProgress = {
   aggregateCharacterAccuracy: {},
   aggregateBigramAccuracy: {},
   settings: DEFAULT_SETTINGS,
+  dailyGoalMinutes: 30,
+  dailyProgress: {
+    date: getTodayDateString(),
+    totalTimeMs: 0,
+  },
 }
 
 // Main progress atom with localStorage persistence
@@ -50,11 +59,31 @@ export const aggregateBigramAccuracyAtom = atom(
   (get) => get(progressAtom).aggregateBigramAccuracy
 )
 
+export const dailyGoalMinutesAtom = atom(
+  (get) => get(progressAtom).dailyGoalMinutes || 30
+)
+
+// Get daily progress, reset if it's a new day
+export const dailyProgressAtom = atom(
+  (get) => {
+    const progress = get(progressAtom)
+    const today = getTodayDateString()
+    
+    // If no daily progress or it's from a different day, return zero
+    if (!progress.dailyProgress || progress.dailyProgress.date !== today) {
+      return { date: today, totalTimeMs: 0 }
+    }
+    
+    return progress.dailyProgress
+  }
+)
+
 // Action atom to save a session
 export const saveSessionAtom = atom(
   null,
   (get, set, session: TypingSession) => {
     const progress = get(progressAtom)
+    const today = getTodayDateString()
     
     // Add session
     const newSessions = [...progress.sessions, session]
@@ -83,11 +112,23 @@ export const saveSessionAtom = atom(
       }
     }
     
+    // Update daily progress
+    let dailyProgress = progress.dailyProgress || { date: today, totalTimeMs: 0 }
+    if (dailyProgress.date !== today) {
+      // New day, reset
+      dailyProgress = { date: today, totalTimeMs: 0 }
+    }
+    dailyProgress = {
+      date: today,
+      totalTimeMs: dailyProgress.totalTimeMs + session.durationMs,
+    }
+    
     set(progressAtom, {
       ...progress,
       sessions: newSessions,
       aggregateCharacterAccuracy: newCharAccuracy,
       aggregateBigramAccuracy: newBigramAccuracy,
+      dailyProgress,
     })
   }
 )
