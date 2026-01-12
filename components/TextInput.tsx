@@ -17,20 +17,20 @@ interface TextInputProps {
 
 const SAMPLE_TEXTS = [
   {
-    title: 'Meeting Recap',
-    text: `Yesterday's 3:30 meeting covered 5 major topics. "We need to finalize the Q4 budget," said Alex, "before the October 17th deadline." The team discussed: pricing (up 12%), timeline adjustments, and vendor contracts. Quick summary - we're expecting 80-90% completion by week 6. Jane asked, "Can we reallocate 2 or 3 engineers?" Everyone agreed; the next sync is Friday at 4:00. Don't forget to review the 28-page document! Zach will summarize the key points for executives who couldn't join.`,
+    title: 'Wizard Problems',
+    text: `"Excuse me," said the wizard, adjusting his 47 scarves, "but your dragon just ate my homework." The dragon burped; 3 pages of calculus floated out. "That's only 12% of it!" Professor Quirx was furious - his beard (6 feet long) quivered with rage. "I've been teaching for 890 years, and this is the 5th time today!" The wizard shrugged. "Can't you just... un-eat it?" The dragon looked offended. "I don't do refunds," it grumbled. Somewhere, a clock struck 13:00. Nobody questioned it.`,
   },
   {
-    title: 'Project Update',
-    text: `The "Phoenix" project hit a major milestone today! We've completed 7 of 9 core features (about 78%). Outstanding items: authentication fixes, data export, and the dashboard redesign. Quick wins - we shipped 24 bug fixes last week. "This is exactly the progress we needed," noted the PM. Timeline check: launch is scheduled for January 15th, 2025. Risks? Only 1 or 2 blockers remain; both are being addressed. The QA team reviewed 360 test cases - zero critical issues found. Next steps: finalize documentation, prep the demo environment.`,
+    title: 'Suspicious Cats',
+    text: `My cat has been acting weird lately. Yesterday at 4:30 AM, I caught him reading the newspaper (business section). "What?" he said - yes, SAID. "I'm checking my investments." Turns out he's been day-trading since 2019; his portfolio is up 340%. "You could've told me," I muttered. He just licked his paw. "You wouldn't understand. You still use a savings account." The audacity! I've been feeding this judgmental creature for 7 years. "By the way," he added, "we're out of the fancy tuna. The $28 kind." Unbelievable.`,
   },
   {
-    title: 'Feedback Request',
-    text: `Hi team - I'd love your thoughts on the new design proposal (v3.2). The key changes are: simplified navigation, 40% fewer clicks to complete tasks, and a refreshed color palette. "Why the big overhaul?" you might ask. User research from August showed that 67% of customers found the old flow confusing. We've addressed this with 5 specific improvements. Questions to consider: Does the layout feel intuitive? Are the 12 new icons clear enough? Please share feedback by Thursday, 9:00 AM. Thanks - your input is extremely valuable!`,
+    title: 'Time Travel Oops',
+    text: `So I accidentally invented time travel (don't ask). First trip: 1847. Immediately stepped on a butterfly. "That's probably fine," I thought - wrong! Came back to find everyone speaks in rhymes now. Second attempt: jumped to 2089. Robots have feelings; one cried when I bumped into him. "Watch it!" he sobbed. Third try: ended up at my own birth (awkward). My mom looked at baby-me and said, "This one's gonna cause problems." She wasn't wrong. Currently stuck in 1963; the WiFi here is terrible. Send help?`,
   },
   {
-    title: 'Quick Brainstorm',
-    text: `Jotting down ideas for the Q1 hackathon (January 20-24). Theme options: "Build something you'd actually use," or maybe "Fix our biggest pain point." Last year's winners created a dashboard that saved 30+ hours per month - amazing! This time, let's aim for 50 participants across 8-10 teams. Prize ideas: extra PTO days (2-3), gift cards ($250 each), or "executive for a day" experiences. Logistics question - should we book the 6th floor conference room? It fits 75 people comfortably. Excited to hear everyone's suggestions; drop them in the shared doc!`,
+    title: 'Ghost Roommate',
+    text: `Living with a ghost isn't bad - mostly. Gerald (died 1847) pays rent on time: $0, but he does the dishes. "Fair exchange," he says, floating through walls at 3 AM. The issues? He keeps rearranging furniture "to improve energy flow." My couch has moved 12 times this month! Also, he's brutally honest. "That outfit? 2 out of 10." Thanks, Gerald. Yesterday he invited 50 ghost friends over. "It's a seance," he explained. "You're not invited; it's rude to bring the living." I ordered pizza anyway. They judged me silently.`,
   },
 ]
 
