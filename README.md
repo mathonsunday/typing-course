@@ -23,10 +23,12 @@ A typing practice app designed for technical professionals who need to unlearn b
 - **Session persistence** — Go home mid-session and resume later
 
 ### 📝 Practice Texts
-- **8 fun sample texts** — Absurd stories (wizard problems, suspicious cats, Pokemon fanfic, yo-yo extremists...)
+- **8 evaluation-ready texts** — Absurd stories (wizard problems, suspicious cats, Pokemon fanfic, yo-yo extremists...)
+- **Spanish practice texts** — Don Quijote (Cervantes, 1605) + dedicated accent drill
+- **Evaluation vs Practice distinction** — UI clearly shows which texts count toward graduation
 - **Paste your own text** — Practice on articles, docs, emails, anything
-- **Evaluation-ready validation** — Shows if custom text covers all required characters
-- **Spanish accent support** — Option+key shortcuts with visual guidance
+- **Coverage validation** — Shows if custom text has all required characters
+- **Spanish accent support** — Option+key shortcuts with visual finger guidance
 
 ### 🖐️ Finger Placement Guide
 - **Hand diagram visualization** — Shows which finger to use for each key
