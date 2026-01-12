@@ -328,9 +328,6 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
           </div>
         </div>
         <div className="flex items-center gap-4">
-          {settings.showFingerGuide && !isComplete && text[currentIndex] && (
-            <FingerGuide currentChar={text[currentIndex]} showInline={true} />
-          )}
           {settings.soundEnabled && (
             <div className="text-zinc-500 text-xs">
               🔊 Sound on
