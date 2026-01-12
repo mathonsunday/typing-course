@@ -52,6 +52,16 @@ export interface GraduationStatus {
   graduatedAt?: number // Timestamp of graduation
 }
 
+// Saved state for resuming an interrupted session
+export interface PausedSession {
+  text: string
+  currentIndex: number
+  elapsedMs: number
+  correctCount: number
+  errors: number[] // Array of error indices
+  pausedAt: number // Timestamp
+}
+
 export interface UserProgress {
   sessions: TypingSession[]
   aggregateCharacterAccuracy: Record<string, CharacterStats>
@@ -60,6 +70,7 @@ export interface UserProgress {
   dailyGoalMinutes: number
   dailyProgress: DailyProgress
   graduatedAt?: number // Timestamp when user graduated (if they have)
+  pausedSession?: PausedSession // Active session that was paused
 }
 
 const STORAGE_KEY = 'typing-course-progress'

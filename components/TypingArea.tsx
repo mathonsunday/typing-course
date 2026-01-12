@@ -18,26 +18,29 @@ interface TypingAreaProps {
   onComplete?: () => void
   onReset?: () => void
   onDone?: () => void // Called when user clicks "Done for Now" after assessment
+  onGoHome?: (sessionState: { currentIndex: number; elapsedMs: number; correctCount: number; errors: number[] } | null) => void
+  resumeState?: { currentIndex: number; elapsedMs: number; correctCount: number; errors: number[] }
 }
 
 // Number of lines to show at once
 const VISIBLE_LINES = 3
 
-export default function TypingArea({ text, onComplete, onReset, onDone }: TypingAreaProps) {
+export default function TypingArea({ text, onComplete, onReset, onDone, onGoHome, resumeState }: TypingAreaProps) {
   const [settings] = useAtom(settingsAtom)
   const saveSession = useSetAtom(saveSessionAtom)
   
   // Session state
-  const [currentIndex, setCurrentIndex] = useState(0)
-  const [errors, setErrors] = useState<Set<number>>(new Set())
-  const [startTime, setStartTime] = useState<number | null>(null)
+  // Initialize from resume state if provided
+  const [currentIndex, setCurrentIndex] = useState(resumeState?.currentIndex ?? 0)
+  const [errors, setErrors] = useState<Set<number>>(new Set(resumeState?.errors ?? []))
+  const [startTime, setStartTime] = useState<number | null>(resumeState ? Date.now() : null)
   const [isComplete, setIsComplete] = useState(false)
   const [hasAssessed, setHasAssessed] = useState(false)
   const [currentWPM, setCurrentWPM] = useState(0)
-  const [elapsedMs, setElapsedMs] = useState(0)
+  const [elapsedMs, setElapsedMs] = useState(resumeState?.elapsedMs ?? 0)
   const [lastKeystrokeTime, setLastKeystrokeTime] = useState<number | null>(null)
   const [isIdle, setIsIdle] = useState(false)
-  const [isPaused, setIsPaused] = useState(false)
+  const [isPaused, setIsPaused] = useState(!!resumeState) // Start paused if resuming
   
   // Idle timeout in ms (5 seconds)
   const IDLE_TIMEOUT = 5000
@@ -45,8 +48,8 @@ export default function TypingArea({ text, onComplete, onReset, onDone }: Typing
   // Analytics tracking
   const characterAccuracyRef = useRef<Record<string, CharacterStats>>({})
   const bigramAccuracyRef = useRef<Record<string, CharacterStats>>({})
-  const correctCountRef = useRef(0)
-  const activeTimeRef = useRef(0) // Accumulated active typing time in ms
+  const correctCountRef = useRef(resumeState?.correctCount ?? 0)
+  const activeTimeRef = useRef(resumeState?.elapsedMs ?? 0) // Accumulated active typing time in ms
   const lastTickRef = useRef<number | null>(null) // For calculating time deltas
   
   // Container ref for focus management
@@ -414,6 +417,26 @@ export default function TypingArea({ text, onComplete, onReset, onDone }: Typing
           </div>
         </div>
         <div className="flex items-center gap-4">
+          {/* Home button */}
+          <button
+            onClick={() => {
+              // Save session state if in progress
+              if (startTime && !isComplete && currentIndex > 0) {
+                onGoHome?.({
+                  currentIndex,
+                  elapsedMs: activeTimeRef.current,
+                  correctCount: correctCountRef.current,
+                  errors: Array.from(errors),
+                })
+              } else {
+                onGoHome?.(null)
+              }
+            }}
+            className="text-zinc-500 hover:text-zinc-300 text-xs transition-colors flex items-center gap-1"
+            title="Go to home screen"
+          >
+            ← Home
+          </button>
           {/* Pause button - only show during active session */}
           {startTime && !isComplete && (
             <button

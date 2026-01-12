@@ -10,13 +10,25 @@ import DailyGoal from '@/components/DailyGoal'
 import VisualAmbiance from '@/components/VisualAmbiance'
 import GraduationProgress from '@/components/GraduationProgress'
 import Encouragement from '@/components/Encouragement'
-import { useAtom } from 'jotai'
-import { settingsAtom } from '@/stores/progress'
+import { useAtom, useAtomValue, useSetAtom } from 'jotai'
+import { settingsAtom, pausedSessionAtom, savePausedSessionAtom, clearPausedSessionAtom } from '@/stores/progress'
+import type { PausedSession } from '@/lib/storage'
+
+interface ResumeState {
+  currentIndex: number
+  elapsedMs: number
+  correctCount: number
+  errors: number[]
+}
 
 function TypingApp() {
   const [practiceText, setPracticeText] = useState<string | null>(null)
+  const [resumeState, setResumeState] = useState<ResumeState | undefined>(undefined)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [settings] = useAtom(settingsAtom)
+  const pausedSession = useAtomValue(pausedSessionAtom)
+  const savePausedSession = useSetAtom(savePausedSessionAtom)
+  const clearPausedSession = useSetAtom(clearPausedSessionAtom)
   
   return (
     <main className="min-h-screen bg-surface relative">
@@ -51,6 +63,51 @@ function TypingApp() {
         {!practiceText && (
           <div className="max-w-4xl mx-auto mb-8 space-y-6">
             <Encouragement />
+            
+            {/* Paused session resume card */}
+            {pausedSession && (
+              <div className="bg-amber-950/30 border border-amber-800/40 rounded-xl p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-medium text-amber-300 mb-1">
+                      ⏸ Session in progress
+                    </h3>
+                    <p className="text-xs text-amber-400/70">
+                      {Math.round((pausedSession.currentIndex / pausedSession.text.length) * 100)}% complete • {Math.round(pausedSession.elapsedMs / 1000)}s elapsed
+                    </p>
+                    <p className="text-xs text-zinc-500 mt-1 truncate max-w-md">
+                      "{pausedSession.text.slice(0, 50)}..."
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        clearPausedSession()
+                      }}
+                      className="px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-200 transition-colors"
+                    >
+                      Discard
+                    </button>
+                    <button
+                      onClick={() => {
+                        setPracticeText(pausedSession.text)
+                        setResumeState({
+                          currentIndex: pausedSession.currentIndex,
+                          elapsedMs: pausedSession.elapsedMs,
+                          correctCount: pausedSession.correctCount,
+                          errors: pausedSession.errors,
+                        })
+                        clearPausedSession()
+                      }}
+                      className="px-4 py-1.5 bg-amber-600 hover:bg-amber-500 rounded-lg text-xs font-medium text-white transition-colors"
+                    >
+                      Resume
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <DailyGoal variant="full" />
             <GraduationProgress />
           </div>
@@ -66,15 +123,35 @@ function TypingApp() {
         {practiceText && (
           <TypingArea 
             text={practiceText}
+            resumeState={resumeState}
             onComplete={() => {
               // Session auto-saved by TypingArea
+              setResumeState(undefined)
             }}
             onReset={() => {
               // Restart with same text
+              setResumeState(undefined)
             }}
             onDone={() => {
               // Go back to text selection / home
               setPracticeText(null)
+              setResumeState(undefined)
+            }}
+            onGoHome={(sessionState) => {
+              // Save session state if in progress
+              if (sessionState) {
+                const paused: PausedSession = {
+                  text: practiceText,
+                  currentIndex: sessionState.currentIndex,
+                  elapsedMs: sessionState.elapsedMs,
+                  correctCount: sessionState.correctCount,
+                  errors: sessionState.errors,
+                  pausedAt: Date.now(),
+                }
+                savePausedSession(paused)
+              }
+              setPracticeText(null)
+              setResumeState(undefined)
             }}
           />
         )}

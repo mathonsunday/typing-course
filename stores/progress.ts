@@ -2,7 +2,7 @@
 
 import { atom } from 'jotai'
 import { atomWithStorage } from 'jotai/utils'
-import type { UserProgress, UserSettings, TypingSession, DailyProgress, SelfAssessmentLevel } from '@/lib/storage'
+import type { UserProgress, UserSettings, TypingSession, DailyProgress, SelfAssessmentLevel, PausedSession } from '@/lib/storage'
 import { GRADUATION_THRESHOLD, GRADUATION_WINDOW } from '@/lib/storage'
 
 function getTodayDateString(): string {
@@ -169,5 +169,30 @@ export const updateAssessmentAtom = atom(
       sessions: newSessions,
       graduatedAt: isGraduated && !progress.graduatedAt ? Date.now() : progress.graduatedAt,
     })
+  }
+)
+
+// Atom to get paused session
+export const pausedSessionAtom = atom((get) => get(progressAtom).pausedSession)
+
+// Action atom to save a paused session
+export const savePausedSessionAtom = atom(
+  null,
+  (get, set, pausedSession: PausedSession | null) => {
+    const progress = get(progressAtom)
+    set(progressAtom, {
+      ...progress,
+      pausedSession: pausedSession || undefined,
+    })
+  }
+)
+
+// Action atom to clear paused session
+export const clearPausedSessionAtom = atom(
+  null,
+  (get, set) => {
+    const progress = get(progressAtom)
+    const { pausedSession: _, ...rest } = progress
+    set(progressAtom, rest as UserProgress)
   }
 )
