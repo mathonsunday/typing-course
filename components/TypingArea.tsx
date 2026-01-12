@@ -163,6 +163,8 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
   
   // Reference for hidden input that handles dead key composition
   const hiddenInputRef = useRef<HTMLInputElement>(null)
+  // Track if we're in the middle of composing (dead key active)
+  const isComposingRef = useRef(false)
   
   // Handle special keys (backspace, enter, etc.)
   const handleKeyDown = useCallback(async (e: React.KeyboardEvent) => {
@@ -194,33 +196,31 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
     }
   }, [isComplete, resetSession, onReset, currentIndex])
   
-  // Dead key characters on Mac that should be ignored (they combine with the next key)
-  const DEAD_KEY_CHARS = new Set([
-    '´', // Option+e (acute accent)
-    '˜', // Option+n (tilde)
-    '¨', // Option+u (dieresis/umlaut)
-    'ˆ', // Option+i (circumflex)
-    '`', // Option+` (grave accent) - careful, this is also a regular character
-    '\u0301', // Combining acute accent
-    '\u0303', // Combining tilde
-    '\u0308', // Combining dieresis
-    '\u0302', // Combining circumflex
-    '\u0300', // Combining grave
-  ])
+  // Handle composition events (for dead key / accent input)
+  const handleCompositionStart = useCallback(() => {
+    isComposingRef.current = true
+  }, [])
+  
+  const handleCompositionEnd = useCallback(() => {
+    isComposingRef.current = false
+  }, [])
   
   // Handle actual character input (supports dead keys / accent composition)
   const handleInput = useCallback(async (e: React.FormEvent<HTMLInputElement>) => {
+    // Skip if we're in the middle of composition (dead key waiting for next char)
+    if (isComposingRef.current) return
+    
     const input = e.currentTarget
     const typedChar = input.value
     
     // Clear the input immediately
     input.value = ''
     
-    // Ignore if no character or multiple characters somehow
-    if (!typedChar || typedChar.length !== 1) return
+    // Ignore if no character
+    if (!typedChar) return
     
-    // Skip dead key characters - wait for the composed result
-    if (DEAD_KEY_CHARS.has(typedChar)) return
+    // Take only the last character (in case multiple accumulated)
+    const char = typedChar.slice(-1)
     
     if (isComplete) return
     
@@ -249,7 +249,7 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
     // Track analytics
     const isCorrect = trackKeystroke(
       expectedChar,
-      typedChar,
+      char,
       prevChar,
       characterAccuracyRef.current,
       bigramAccuracyRef.current
@@ -377,6 +377,8 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
           className="absolute opacity-0 w-0 h-0 pointer-events-none"
           onKeyDown={handleKeyDown}
           onInput={handleInput}
+          onCompositionStart={handleCompositionStart}
+          onCompositionEnd={handleCompositionEnd}
           autoComplete="off"
           autoCapitalize="off"
           autoCorrect="off"
