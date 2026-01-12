@@ -11,7 +11,7 @@ import DailyGoal from './DailyGoal'
 import AccentHint from './AccentHint'
 import WPMContext from './WPMContext'
 import SelfAssessment from './SelfAssessment'
-import type { ConfidenceLevel } from './SelfAssessment'
+import GraduationProgress from './GraduationProgress'
 
 interface TypingAreaProps {
   text: string
@@ -536,13 +536,8 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
       {isComplete && (
         <div className="mt-6 space-y-4">
           <WPMContext wpm={currentWPM} />
-          <SelfAssessment 
-            wpm={currentWPM} 
-            onAssessment={(confidence: ConfidenceLevel) => {
-              // TODO: Save assessment to progress tracking
-              console.log('Self-assessment:', confidence, 'at', currentWPM, 'WPM')
-            }}
-          />
+          <SelfAssessment />
+          <GraduationProgress variant="compact" />
         </div>
       )}
     </div>

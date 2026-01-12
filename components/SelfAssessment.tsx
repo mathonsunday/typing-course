@@ -1,23 +1,21 @@
 'use client'
 
 import { useState } from 'react'
-
-export type ConfidenceLevel = 'struggling' | 'improving' | 'comfortable' | 'fluid'
+import { SelfAssessmentLevel, updateSessionAssessment } from '@/lib/storage'
 
 interface SelfAssessmentProps {
-  wpm: number
-  onAssessment: (confidence: ConfidenceLevel) => void
+  onAssessment?: (level: SelfAssessmentLevel) => void
 }
 
-const CONFIDENCE_OPTIONS: { level: ConfidenceLevel; label: string; description: string; emoji: string }[] = [
+const CONFIDENCE_OPTIONS: { level: SelfAssessmentLevel; label: string; description: string; emoji: string }[] = [
   { 
-    level: 'struggling', 
+    level: 'learning', 
     label: 'Still learning', 
     description: 'Thinking about fingers, making mistakes',
     emoji: '🌱'
   },
   { 
-    level: 'improving', 
+    level: 'getting_there', 
     label: 'Getting there', 
     description: 'Some parts natural, but not yet efficient',
     emoji: '📈'
@@ -29,19 +27,21 @@ const CONFIDENCE_OPTIONS: { level: ConfidenceLevel; label: string; description: 
     emoji: '😊'
   },
   { 
-    level: 'fluid', 
+    level: 'ready_for_work', 
     label: 'Ready for work', 
     description: 'Fast enough and automatic — no bottleneck',
     emoji: '✨'
   },
 ]
 
-export default function SelfAssessment({ wpm, onAssessment }: SelfAssessmentProps) {
-  const [selected, setSelected] = useState<ConfidenceLevel | null>(null)
+export default function SelfAssessment({ onAssessment }: SelfAssessmentProps) {
+  const [selected, setSelected] = useState<SelfAssessmentLevel | null>(null)
   
-  const handleSelect = (level: ConfidenceLevel) => {
+  const handleSelect = (level: SelfAssessmentLevel) => {
     setSelected(level)
-    onAssessment(level)
+    // Save the assessment to the most recent session
+    updateSessionAssessment(level)
+    onAssessment?.(level)
   }
   
   return (
@@ -75,7 +75,7 @@ export default function SelfAssessment({ wpm, onAssessment }: SelfAssessmentProp
         ))}
       </div>
       
-      {selected === 'fluid' && (
+      {selected === 'ready_for_work' && (
         <div className="mt-4 p-3 bg-green-950/30 border border-green-800/30 rounded-lg">
           <p className="text-sm text-green-400">
             🎉 Great! A few more sessions like this and you'll be ready to graduate.

@@ -7,6 +7,8 @@ export interface CharacterStats {
   total: number
 }
 
+export type SelfAssessmentLevel = 'learning' | 'getting_there' | 'comfortable' | 'ready_for_work'
+
 export interface TypingSession {
   id: string
   timestamp: number
@@ -18,6 +20,7 @@ export interface TypingSession {
   accuracy: number
   characterAccuracy: Record<string, CharacterStats>
   bigramAccuracy: Record<string, CharacterStats>
+  selfAssessment?: SelfAssessmentLevel // Optional for backwards compat
 }
 
 export type AmbianceStyle = 'none' | 'geometric' | 'fireflies' | 'nebula' | 'eyes' | 'shadowcat' | 'shadows' | 'starfield'
@@ -38,6 +41,17 @@ export interface DailyProgress {
   totalTimeMs: number
 }
 
+// Graduation criteria: 5 out of last 7 sessions rated "Ready for work"
+export const GRADUATION_WINDOW = 7
+export const GRADUATION_THRESHOLD = 5
+
+export interface GraduationStatus {
+  readyCount: number // Sessions rated "ready_for_work" in last GRADUATION_WINDOW
+  windowSize: number // How many of last sessions we're looking at (up to GRADUATION_WINDOW)
+  isGraduated: boolean
+  graduatedAt?: number // Timestamp of graduation
+}
+
 export interface UserProgress {
   sessions: TypingSession[]
   aggregateCharacterAccuracy: Record<string, CharacterStats>
@@ -45,6 +59,7 @@ export interface UserProgress {
   settings: UserSettings
   dailyGoalMinutes: number
   dailyProgress: DailyProgress
+  graduatedAt?: number // Timestamp when user graduated (if they have)
 }
 
 const STORAGE_KEY = 'typing-course-progress'
@@ -201,4 +216,44 @@ export function importProgress(json: string): UserProgress {
 export function clearProgress(): void {
   if (typeof window === 'undefined') return
   localStorage.removeItem(STORAGE_KEY)
+}
+
+/**
+ * Calculate graduation status based on recent sessions
+ */
+export function getGraduationStatus(progress: UserProgress): GraduationStatus {
+  // Only look at sessions that have self-assessments
+  const assessedSessions = progress.sessions.filter(s => s.selfAssessment)
+  const recentSessions = assessedSessions.slice(-GRADUATION_WINDOW)
+  
+  const readyCount = recentSessions.filter(s => s.selfAssessment === 'ready_for_work').length
+  
+  return {
+    readyCount,
+    windowSize: recentSessions.length,
+    isGraduated: progress.graduatedAt != null || (recentSessions.length >= GRADUATION_THRESHOLD && readyCount >= GRADUATION_THRESHOLD),
+    graduatedAt: progress.graduatedAt,
+  }
+}
+
+/**
+ * Update self-assessment for the most recent session
+ */
+export function updateSessionAssessment(assessment: SelfAssessmentLevel): UserProgress {
+  const progress = loadProgress()
+  
+  if (progress.sessions.length === 0) return progress
+  
+  // Update the most recent session
+  const lastSession = progress.sessions[progress.sessions.length - 1]
+  lastSession.selfAssessment = assessment
+  
+  // Check if this triggers graduation
+  const status = getGraduationStatus(progress)
+  if (status.isGraduated && !progress.graduatedAt) {
+    progress.graduatedAt = Date.now()
+  }
+  
+  saveProgress(progress)
+  return progress
 }

@@ -8,6 +8,7 @@ import SettingsPanel from '@/components/SettingsPanel'
 import SessionStats from '@/components/SessionStats'
 import DailyGoal from '@/components/DailyGoal'
 import VisualAmbiance from '@/components/VisualAmbiance'
+import GraduationProgress from '@/components/GraduationProgress'
 import { useAtom } from 'jotai'
 import { settingsAtom } from '@/stores/progress'
 
@@ -45,10 +46,11 @@ function TypingApp() {
       
       {/* Main content */}
       <div className="max-w-5xl mx-auto px-6 py-12 relative z-10">
-        {/* Daily goal - shown on home screen */}
+        {/* Daily goal and graduation progress - shown on home screen */}
         {!practiceText && (
-          <div className="max-w-4xl mx-auto mb-8">
+          <div className="max-w-4xl mx-auto mb-8 space-y-6">
             <DailyGoal variant="full" />
+            <GraduationProgress />
           </div>
         )}
         
