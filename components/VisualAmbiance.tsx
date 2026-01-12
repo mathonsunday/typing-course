@@ -34,7 +34,7 @@ export default function VisualAmbiance({ style, intensity = 0.5 }: VisualAmbianc
     
     // Initialize particles
     if (style === 'particles' || style === 'both') {
-      const particleCount = Math.floor(30 * intensity)
+      const particleCount = Math.floor(50 * intensity) + 20 // More particles, minimum 20
       particlesRef.current = Array.from({ length: particleCount }, () => createParticle(canvas))
     }
     
@@ -72,7 +72,7 @@ export default function VisualAmbiance({ style, intensity = 0.5 }: VisualAmbianc
     <canvas
       ref={canvasRef}
       className="fixed inset-0 pointer-events-none z-0"
-      style={{ opacity: 0.6 }}
+      style={{ opacity: 0.85 }}
     />
   )
 }
@@ -92,10 +92,10 @@ function createParticle(canvas: HTMLCanvasElement): Particle {
   return {
     x: Math.random() * canvas.width,
     y: Math.random() * canvas.height,
-    size: Math.random() * 3 + 1,
-    speedX: (Math.random() - 0.5) * 0.3,
-    speedY: (Math.random() - 0.5) * 0.3 - 0.1, // Slight upward drift
-    opacity: Math.random() * 0.5 + 0.2,
+    size: Math.random() * 4 + 2, // Larger particles
+    speedX: (Math.random() - 0.5) * 0.4,
+    speedY: (Math.random() - 0.5) * 0.4 - 0.15, // Slight upward drift
+    opacity: Math.random() * 0.5 + 0.4, // More opaque
     hue: Math.random() * 60 + 220, // Blue to purple range
   }
 }
@@ -124,13 +124,13 @@ function drawParticles(
     // Draw particle
     ctx.beginPath()
     ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2)
-    ctx.fillStyle = `hsla(${particle.hue}, 50%, 60%, ${particle.opacity * intensity})`
+    ctx.fillStyle = `hsla(${particle.hue}, 70%, 65%, ${particle.opacity * intensity})`
     ctx.fill()
     
-    // Add subtle glow
+    // Add glow effect
     ctx.beginPath()
-    ctx.arc(particle.x, particle.y, particle.size * 2, 0, Math.PI * 2)
-    ctx.fillStyle = `hsla(${particle.hue}, 50%, 60%, ${particle.opacity * intensity * 0.2})`
+    ctx.arc(particle.x, particle.y, particle.size * 3, 0, Math.PI * 2)
+    ctx.fillStyle = `hsla(${particle.hue}, 60%, 55%, ${particle.opacity * intensity * 0.3})`
     ctx.fill()
   })
 }
@@ -151,12 +151,12 @@ function drawGradient(
     canvas.width * 0.8
   )
   
-  // Deep purple to dark blue gradient that shifts
+  // Deep purple to dark blue gradient that shifts - more visible
   const hue1 = 250 + Math.sin(phase) * 20
   const hue2 = 220 + Math.cos(phase * 0.5) * 20
   
-  gradient.addColorStop(0, `hsla(${hue1}, 40%, 15%, ${intensity * 0.3})`)
-  gradient.addColorStop(0.5, `hsla(${hue2}, 30%, 10%, ${intensity * 0.2})`)
+  gradient.addColorStop(0, `hsla(${hue1}, 60%, 25%, ${intensity * 0.5})`)
+  gradient.addColorStop(0.5, `hsla(${hue2}, 50%, 18%, ${intensity * 0.35})`)
   gradient.addColorStop(1, 'hsla(0, 0%, 0%, 0)')
   
   ctx.fillStyle = gradient
@@ -174,7 +174,7 @@ function drawGradient(
   
   const hue3 = 280 + Math.sin(phase * 0.3) * 30
   
-  gradient2.addColorStop(0, `hsla(${hue3}, 50%, 20%, ${intensity * 0.2})`)
+  gradient2.addColorStop(0, `hsla(${hue3}, 60%, 25%, ${intensity * 0.35})`)
   gradient2.addColorStop(1, 'hsla(0, 0%, 0%, 0)')
   
   ctx.fillStyle = gradient2
