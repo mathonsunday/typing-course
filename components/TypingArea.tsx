@@ -195,19 +195,15 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
   }, [isComplete, resetSession, onReset, currentIndex])
   
   // Handle actual character input (supports dead keys / accent composition)
-  const handleBeforeInput = useCallback(async (e: React.FormEvent<HTMLInputElement>) => {
-    const inputEvent = e.nativeEvent as InputEvent
-    const typedChar = inputEvent.data
+  const handleInput = useCallback(async (e: React.FormEvent<HTMLInputElement>) => {
+    const input = e.currentTarget
+    const typedChar = input.value
     
-    // Ignore if no character data (e.g., delete operations)
+    // Clear the input immediately
+    input.value = ''
+    
+    // Ignore if no character or multiple characters somehow
     if (!typedChar || typedChar.length !== 1) return
-    
-    e.preventDefault()
-    
-    // Clear the hidden input to prevent accumulation
-    if (hiddenInputRef.current) {
-      hiddenInputRef.current.value = ''
-    }
     
     if (isComplete) return
     
@@ -363,7 +359,7 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
           type="text"
           className="absolute opacity-0 w-0 h-0 pointer-events-none"
           onKeyDown={handleKeyDown}
-          onBeforeInput={handleBeforeInput}
+          onInput={handleInput}
           autoComplete="off"
           autoCapitalize="off"
           autoCorrect="off"
