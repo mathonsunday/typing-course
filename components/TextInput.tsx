@@ -32,10 +32,17 @@ export default function TextInput({ onSubmit, currentText }: TextInputProps) {
   const [isExpanded, setIsExpanded] = useState(!currentText)
   
   const handleSubmit = () => {
-    const text = customText.trim()
+    // Normalize text: collapse whitespace, remove control characters
+    const text = customText
+      .replace(/[\r\n\t]+/g, ' ')  // Convert newlines/tabs to spaces
+      .replace(/\s+/g, ' ')         // Collapse multiple spaces
+      .replace(/[^\x20-\x7E\u00A0-\u00FF]/g, '') // Remove non-printable chars (keep basic latin + extended)
+      .trim()
+    
     if (text.length > 0) {
       onSubmit(text)
       setIsExpanded(false)
+      setCustomText('') // Clear for next time
     }
   }
   

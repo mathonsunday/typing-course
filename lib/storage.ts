@@ -87,13 +87,31 @@ export function loadProgress(): UserProgress {
 /**
  * Save user progress to localStorage
  */
-export function saveProgress(progress: UserProgress): void {
-  if (typeof window === 'undefined') return
+export function saveProgress(progress: UserProgress): boolean {
+  if (typeof window === 'undefined') return false
   
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(progress))
+    return true
   } catch (e) {
+    // Handle quota exceeded or other storage errors
+    if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+      console.error('localStorage quota exceeded. Consider exporting and clearing old sessions.')
+      // Try to save just the last 50 sessions to free space
+      const trimmedProgress = {
+        ...progress,
+        sessions: progress.sessions.slice(-50)
+      }
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmedProgress))
+        console.log('Saved trimmed progress (last 50 sessions)')
+        return true
+      } catch {
+        console.error('Still failed to save even trimmed progress')
+      }
+    }
     console.error('Failed to save progress:', e)
+    return false
   }
 }
 

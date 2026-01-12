@@ -1,7 +1,8 @@
 'use client'
 
 import { useAtom } from 'jotai'
-import { settingsAtom } from '@/stores/progress'
+import { settingsAtom, progressAtom } from '@/stores/progress'
+import { useRef } from 'react'
 
 interface SettingsPanelProps {
   isOpen: boolean
@@ -10,6 +11,43 @@ interface SettingsPanelProps {
 
 export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const [settings, setSettings] = useAtom(settingsAtom)
+  const [progress, setProgress] = useAtom(progressAtom)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  const handleExport = () => {
+    const dataStr = JSON.stringify(progress, null, 2)
+    const blob = new Blob([dataStr], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `typing-course-progress-${new Date().toISOString().split('T')[0]}.json`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+  
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      try {
+        const imported = JSON.parse(event.target?.result as string)
+        // Basic validation
+        if (imported.sessions && imported.settings) {
+          setProgress(imported)
+          alert('Progress imported successfully!')
+        } else {
+          alert('Invalid file format')
+        }
+      } catch {
+        alert('Failed to parse file')
+      }
+    }
+    reader.readAsText(file)
+    // Reset input so same file can be selected again
+    e.target.value = ''
+  }
   
   if (!isOpen) return null
   
@@ -97,9 +135,32 @@ export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           </div>
         </div>
         
+        {/* Data management */}
         <div className="mt-8 pt-6 border-t border-zinc-800">
-          <p className="text-xs text-zinc-500 text-center">
-            Your progress is automatically saved to your browser.
+          <h3 className="text-sm font-medium text-zinc-300 mb-3">Data</h3>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleExport}
+              className="flex-1 px-3 py-2 bg-surface rounded-lg text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
+            >
+              Export Progress
+            </button>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="flex-1 px-3 py-2 bg-surface rounded-lg text-sm text-zinc-300 hover:bg-zinc-800 transition-colors"
+            >
+              Import Progress
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleImport}
+              className="hidden"
+            />
+          </div>
+          <p className="text-xs text-zinc-500 mt-3">
+            {progress.sessions.length} sessions saved locally
           </p>
         </div>
       </div>

@@ -38,6 +38,10 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
   // Split text into lines for windowed display
   // Each line is an exact slice of the original text with correct indices
   const lines = useMemo(() => {
+    if (!text || text.length === 0) {
+      return [{ text: '', startIndex: 0 }]
+    }
+    
     const MAX_LINE_LENGTH = 55
     const result: { text: string; startIndex: number }[] = []
     
