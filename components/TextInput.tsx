@@ -32,6 +32,22 @@ const SAMPLE_TEXTS = [
     title: 'Ghost Roommate',
     text: `Living with a ghost isn't bad - mostly. Gerald (died 1847) pays rent on time: $0, but he does the dishes. "Fair exchange," he says, floating through walls at 3 AM. The issues? He keeps rearranging furniture "to improve energy flow." My couch has moved 12 times this month! Also, he's brutally honest. "That outfit? 2 out of 10." Thanks, Gerald. Yesterday he invited 50 ghost friends over. "It's a seance," he explained. "You're not invited; it's rude to bring the living." I ordered pizza anyway. They judged me silently.`,
   },
+  {
+    title: 'Pokemon Fanfic',
+    text: `"Pikachu, I need you to file my taxes," Ash whispered at 2:47 AM. The electric mouse stared back, exhausted. "Pika?" Ash had been a trainer for 26 years now - still 10 years old (don't ask). His Pokedex showed 897 Pokemon caught; his bank account showed $3.50. "We've beaten every gym," he muttered, "but I can't afford rent." Brock called yesterday: "I'm a doctor now. Real job." Misty? "Marine biologist. Great benefits!" Meanwhile, Ash was sleeping in tall grass, hoping for rare encounters. "This is fine," he said. Pikachu disagreed.`,
+  },
+  {
+    title: 'Niche Video Games',
+    text: `"Spreadsheet Simulator 2024" just dropped - finally! You play as an accountant (named Greg) who must balance 87 quarterly reports before 5:00 PM. Critics are calling it "aggressively boring" and "why does this exist?" I've logged 340 hours. The sequel, "Tax Form Turbo," adds a romance subplot; you can date the fax machine. My favorite? "Waiting Room Extreme" - you sit in a DMV for 6 real-time hours. No saves. One bathroom break allowed. "Is this even a game?" asked my friend. "It's art," I replied, adjusting my ergonomic chair. He left.`,
+  },
+  {
+    title: 'Yo-Yo Extremists',
+    text: `"You're holding it wrong." Derek's eye twitched. He'd been yo-yoing for 23 years; this kid was maybe 14. "I've won 7 national championships," Derek hissed. "That's a basic sleeper - everyone knows you need 38 degrees of wrist tilt!" The judges exchanged looks. "Sir, this is a children's competition." Derek didn't care. His custom yo-yo (titanium core, hand-carved, $2,500) spun at exactly 4,890 RPM. "Amateurs," he muttered. His wife had left him; his kids didn't call. But when that yo-yo hit a perfect "around the world?" Worth it. Probably.`,
+  },
+  {
+    title: 'Birds of Latin America',
+    text: `The Quetzal doesn't care about your problems. With its 26-inch tail feathers (excessive, honestly) and "I'm better than you" attitude, it just sits there, being gorgeous. Meanwhile, the Horned Screamer - yes, that's real - looks like a turkey had an existential crisis. "Why am I called this?" it probably wonders at 4:30 AM while screaming. The Jabiru stork stands 5 feet tall; its name means "swollen neck" (rude). And the Oilbird? Lives in caves, eats fruit, navigates by echolocation. Scientists asked: "But why?" The Oilbird offered no comment.`,
+  },
 ]
 
 export default function TextInput({ onSubmit, currentText }: TextInputProps) {
