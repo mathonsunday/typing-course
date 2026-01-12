@@ -8,6 +8,7 @@ import { trackKeystroke, createSession, calculateWPM } from '@/lib/analytics'
 import type { CharacterStats } from '@/lib/storage'
 import FingerGuide from './FingerGuide'
 import DailyGoal from './DailyGoal'
+import AccentHint from './AccentHint'
 
 interface TypingAreaProps {
   text: string
@@ -425,9 +426,16 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
         />
       </div>
       
+      {/* Spanish accent hint */}
+      {!isComplete && (
+        <div className="mt-6">
+          <AccentHint currentChar={text[currentIndex]} />
+        </div>
+      )}
+      
       {/* Finger placement guide */}
       {settings.showFingerGuide && !isComplete && (
-        <div className="mt-6">
+        <div className="mt-4">
           <FingerGuide currentChar={text[currentIndex]} />
         </div>
       )}
