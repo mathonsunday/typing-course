@@ -29,11 +29,18 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
   const [isComplete, setIsComplete] = useState(false)
   const [currentWPM, setCurrentWPM] = useState(0)
   const [elapsedMs, setElapsedMs] = useState(0)
+  const [lastKeystrokeTime, setLastKeystrokeTime] = useState<number | null>(null)
+  const [isIdle, setIsIdle] = useState(false)
+  
+  // Idle timeout in ms (5 seconds)
+  const IDLE_TIMEOUT = 5000
   
   // Analytics tracking
   const characterAccuracyRef = useRef<Record<string, CharacterStats>>({})
   const bigramAccuracyRef = useRef<Record<string, CharacterStats>>({})
   const correctCountRef = useRef(0)
+  const activeTimeRef = useRef(0) // Accumulated active typing time in ms
+  const lastTickRef = useRef<number | null>(null) // For calculating time deltas
   
   // Container ref for focus management
   const containerRef = useRef<HTMLDivElement>(null)
@@ -112,9 +119,13 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
     setIsComplete(false)
     setCurrentWPM(0)
     setElapsedMs(0)
+    setLastKeystrokeTime(null)
+    setIsIdle(false)
     characterAccuracyRef.current = {}
     bigramAccuracyRef.current = {}
     correctCountRef.current = 0
+    activeTimeRef.current = 0
+    lastTickRef.current = null
     containerRef.current?.focus()
   }, [])
   
@@ -123,18 +134,31 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
     resetSession()
   }, [text, resetSession])
   
-  // Update WPM and elapsed time every second during typing
+  // Update WPM and elapsed time every 100ms during typing (with idle detection)
   useEffect(() => {
     if (!startTime || isComplete) return
     
     const interval = setInterval(() => {
-      const elapsed = Date.now() - startTime
-      setElapsedMs(elapsed)
-      setCurrentWPM(calculateWPM(correctCountRef.current, elapsed))
-    }, 1000)
+      const now = Date.now()
+      
+      // Check if idle (no keystroke for IDLE_TIMEOUT ms)
+      const timeSinceLastKeystroke = lastKeystrokeTime ? now - lastKeystrokeTime : 0
+      const currentlyIdle = timeSinceLastKeystroke > IDLE_TIMEOUT
+      setIsIdle(currentlyIdle)
+      
+      // Only accumulate time if not idle
+      if (!currentlyIdle && lastTickRef.current) {
+        const delta = now - lastTickRef.current
+        activeTimeRef.current += delta
+        setElapsedMs(activeTimeRef.current)
+        setCurrentWPM(calculateWPM(correctCountRef.current, activeTimeRef.current))
+      }
+      
+      lastTickRef.current = currentlyIdle ? null : now
+    }, 100)
     
     return () => clearInterval(interval)
-  }, [startTime, isComplete])
+  }, [startTime, isComplete, lastKeystrokeTime, IDLE_TIMEOUT])
   
   // Handle keypress
   const handleKeyDown = useCallback(async (e: React.KeyboardEvent) => {
@@ -174,9 +198,20 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
     
     e.preventDefault()
     
+    const now = Date.now()
+    
     // Start timer on first keystroke
     if (startTime === null) {
-      setStartTime(Date.now())
+      setStartTime(now)
+      lastTickRef.current = now
+    }
+    
+    // Track last keystroke time for idle detection
+    setLastKeystrokeTime(now)
+    
+    // Resume timer if we were idle
+    if (isIdle) {
+      lastTickRef.current = now
     }
     
     const expectedChar = text[currentIndex]
@@ -209,8 +244,8 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
     
     // Check for completion
     if (newIndex >= text.length) {
-      const endTime = Date.now()
-      const duration = endTime - (startTime || endTime)
+      // Use active time, not wall clock time
+      const duration = activeTimeRef.current
       
       setIsComplete(true)
       setCurrentWPM(calculateWPM(correctCountRef.current, duration))
@@ -231,7 +266,7 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
       saveSession(session)
       onComplete?.()
     }
-  }, [currentIndex, text, startTime, isComplete, settings, saveSession, onComplete, onReset, resetSession])
+  }, [currentIndex, text, startTime, isComplete, isIdle, settings, saveSession, onComplete, onReset, resetSession])
   
   // Calculate current accuracy
   const accuracy = currentIndex > 0 
@@ -284,9 +319,12 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
               {currentLineIndex + 1}/{lines.length} lines
             </span>
           </div>
-          <div className="border-l border-zinc-700 pl-6">
+          <div className="border-l border-zinc-700 pl-6 flex items-center gap-2">
             <span className="text-zinc-500">Daily</span>{' '}
             <DailyGoal variant="compact" currentSessionMs={elapsedMs} />
+            {isIdle && startTime && !isComplete && (
+              <span className="text-yellow-500 text-xs animate-pulse">⏸ Paused</span>
+            )}
           </div>
         </div>
         <div className="flex items-center gap-4">
