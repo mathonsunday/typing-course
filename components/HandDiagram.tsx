@@ -1,8 +1,16 @@
 'use client'
 
+interface ActiveFinger {
+  hand: 'left' | 'right'
+  finger: number // 0=thumb, 1=index, 2=middle, 3=ring, 4=pinky
+}
+
 interface HandDiagramProps {
-  activeHand: 'left' | 'right' | null
-  activeFinger: number | null // 0=thumb, 1=index, 2=middle, 3=ring, 4=pinky
+  // Legacy single-finger support
+  activeHand?: 'left' | 'right' | null
+  activeFinger?: number | null
+  // Multi-finger support for accent key combos
+  activeFingers?: ActiveFinger[]
 }
 
 // SVG paths for each finger of the LEFT hand (viewed from above while typing)
@@ -42,14 +50,28 @@ const RIGHT_PALM = "M 120 55 L 120 95 Q 120 110 100 115 Q 75 120 50 115 Q 35 108
 
 const FINGER_NAMES = ['Thumb', 'Index', 'Middle', 'Ring', 'Pinky']
 
-export default function HandDiagram({ activeHand, activeFinger }: HandDiagramProps) {
+export default function HandDiagram({ activeHand, activeFinger, activeFingers = [] }: HandDiagramProps) {
+  // Build a set of active fingers for quick lookup
+  const activeFingersSet = new Set<string>()
+  
+  // Support legacy single-finger props
+  if (activeHand && activeFinger !== null && activeFinger !== undefined) {
+    activeFingersSet.add(`${activeHand}-${activeFinger}`)
+  }
+  
+  // Add multi-finger support
+  activeFingers.forEach(af => {
+    activeFingersSet.add(`${af.hand}-${af.finger}`)
+  })
+  
   const renderHand = (
     side: 'left' | 'right',
     fingers: string[],
     palm: string
   ) => {
-    const isActiveHand = activeHand === side
-    const baseOpacity = isActiveHand ? 0.4 : 0.15
+    // Check if any finger on this hand is active
+    const hasActiveFinger = Array.from(activeFingersSet).some(key => key.startsWith(side))
+    const baseOpacity = hasActiveFinger ? 0.4 : 0.15
     const activeColor = '#6366f1'
     const inactiveColor = '#71717a'
     
@@ -58,13 +80,13 @@ export default function HandDiagram({ activeHand, activeFinger }: HandDiagramPro
         {/* Palm */}
         <path
           d={palm}
-          fill={isActiveHand ? inactiveColor : inactiveColor}
+          fill={inactiveColor}
           opacity={baseOpacity}
         />
         
         {/* Fingers */}
         {fingers.map((path, idx) => {
-          const isActiveFinger = isActiveHand && activeFinger === idx
+          const isActiveFinger = activeFingersSet.has(`${side}-${idx}`)
           return (
             <path
               key={idx}
@@ -90,6 +112,19 @@ export default function HandDiagram({ activeHand, activeFinger }: HandDiagramPro
     )
   }
   
+  // Build label for active fingers
+  const getActiveFingerLabels = () => {
+    const labels: string[] = []
+    activeFingersSet.forEach(key => {
+      const [hand, fingerStr] = key.split('-')
+      const finger = parseInt(fingerStr)
+      labels.push(`${hand === 'left' ? 'Left' : 'Right'} ${FINGER_NAMES[finger]}`)
+    })
+    return labels
+  }
+  
+  const labels = getActiveFingerLabels()
+  
   return (
     <div className="flex flex-col items-center gap-2">
       <div className="flex items-center gap-8">
@@ -97,10 +132,10 @@ export default function HandDiagram({ activeHand, activeFinger }: HandDiagramPro
         {renderHand('right', RIGHT_HAND_FINGERS, RIGHT_PALM)}
       </div>
       
-      {/* Active finger label */}
-      {activeHand && activeFinger !== null && (
+      {/* Active finger label(s) */}
+      {labels.length > 0 && (
         <div className="text-sm text-zinc-300 font-medium">
-          {activeHand === 'left' ? 'Left' : 'Right'} {FINGER_NAMES[activeFinger]}
+          {labels.join(' + ')}
         </div>
       )}
     </div>
