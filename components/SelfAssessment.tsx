@@ -13,25 +13,25 @@ const CONFIDENCE_OPTIONS: { level: ConfidenceLevel; label: string; description: 
   { 
     level: 'struggling', 
     label: 'Still learning', 
-    description: 'Having to think about finger placement',
+    description: 'Thinking about fingers, making mistakes',
     emoji: '🌱'
   },
   { 
     level: 'improving', 
     label: 'Getting there', 
-    description: 'Some keys feel natural, others need work',
+    description: 'Some parts natural, but not yet efficient',
     emoji: '📈'
   },
   { 
     level: 'comfortable', 
     label: 'Comfortable', 
-    description: 'Typing feels mostly automatic',
+    description: 'Mostly automatic, but could be faster',
     emoji: '😊'
   },
   { 
     level: 'fluid', 
-    label: 'Fluid & confident', 
-    description: 'Not thinking about typing at all',
+    label: 'Ready for work', 
+    description: 'Fast enough and automatic — no bottleneck',
     emoji: '✨'
   },
 ]
@@ -46,9 +46,9 @@ export default function SelfAssessment({ wpm, onAssessment }: SelfAssessmentProp
   
   return (
     <div className="bg-surface-raised rounded-xl p-5 border border-zinc-800">
-      <h3 className="text-sm font-medium text-zinc-300 mb-1">How did that feel?</h3>
+      <h3 className="text-sm font-medium text-zinc-300 mb-1">How was that?</h3>
       <p className="text-xs text-zinc-500 mb-4">
-        At {wpm} WPM, your typing felt...
+        Was this fast and automatic enough for your work?
       </p>
       
       <div className="grid grid-cols-2 gap-2">
@@ -78,7 +78,7 @@ export default function SelfAssessment({ wpm, onAssessment }: SelfAssessmentProp
       {selected === 'fluid' && (
         <div className="mt-4 p-3 bg-green-950/30 border border-green-800/30 rounded-lg">
           <p className="text-sm text-green-400">
-            🎉 Amazing! If you consistently feel fluid at this speed, you might be ready to graduate!
+            🎉 Great! A few more sessions like this and you'll be ready to graduate.
           </p>
         </div>
       )}
