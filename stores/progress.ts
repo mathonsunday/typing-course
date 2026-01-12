@@ -24,7 +24,7 @@ const DEFAULT_PROGRESS: UserProgress = {
   aggregateCharacterAccuracy: {},
   aggregateBigramAccuracy: {},
   settings: DEFAULT_SETTINGS,
-  dailyGoalMinutes: 30,
+  dailyGoalMinutes: 5,
   dailyProgress: {
     date: getTodayDateString(),
     totalTimeMs: 0,
@@ -60,7 +60,14 @@ export const aggregateBigramAccuracyAtom = atom(
 )
 
 export const dailyGoalMinutesAtom = atom(
-  (get) => get(progressAtom).dailyGoalMinutes || 30
+  (get) => get(progressAtom).dailyGoalMinutes || 5,
+  (get, set, newGoal: number) => {
+    const progress = get(progressAtom)
+    set(progressAtom, {
+      ...progress,
+      dailyGoalMinutes: newGoal,
+    })
+  }
 )
 
 // Get daily progress, reset if it's a new day

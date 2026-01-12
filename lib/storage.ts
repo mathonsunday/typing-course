@@ -67,7 +67,7 @@ const DEFAULT_PROGRESS: UserProgress = {
   aggregateCharacterAccuracy: {},
   aggregateBigramAccuracy: {},
   settings: DEFAULT_SETTINGS,
-  dailyGoalMinutes: 30,
+  dailyGoalMinutes: 5,
   dailyProgress: {
     date: getTodayDateString(),
     totalTimeMs: 0,

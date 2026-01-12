@@ -1,7 +1,7 @@
 'use client'
 
 import { useAtom } from 'jotai'
-import { settingsAtom, progressAtom } from '@/stores/progress'
+import { settingsAtom, progressAtom, dailyGoalMinutesAtom } from '@/stores/progress'
 import { useRef } from 'react'
 
 interface SettingsPanelProps {
@@ -9,9 +9,12 @@ interface SettingsPanelProps {
   onClose: () => void
 }
 
+const GOAL_OPTIONS = [5, 10, 15, 20, 30, 45, 60]
+
 export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const [settings, setSettings] = useAtom(settingsAtom)
   const [progress, setProgress] = useAtom(progressAtom)
+  const [dailyGoal, setDailyGoal] = useAtom(dailyGoalMinutesAtom)
   const fileInputRef = useRef<HTMLInputElement>(null)
   
   const handleExport = () => {
@@ -74,6 +77,29 @@ export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
         </div>
         
         <div className="space-y-6">
+          {/* Daily goal setting */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-sm font-medium text-zinc-100">Daily goal</div>
+              <div className="text-sm text-zinc-400">{dailyGoal} min</div>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {GOAL_OPTIONS.map((minutes) => (
+                <button
+                  key={minutes}
+                  onClick={() => setDailyGoal(minutes)}
+                  className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                    dailyGoal === minutes
+                      ? 'bg-accent text-white'
+                      : 'bg-surface text-zinc-400 hover:bg-zinc-800'
+                  }`}
+                >
+                  {minutes}m
+                </button>
+              ))}
+            </div>
+          </div>
+          
           {/* Sound toggle */}
           <div className="flex items-center justify-between">
             <div>
