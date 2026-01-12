@@ -71,6 +71,13 @@ const SAMPLE_TEXTS: SampleText[] = [
     source: 'Miguel de Cervantes, 1605',
     text: `En un lugar de la Mancha, de cuyo nombre no quiero acordarme, no ha mucho tiempo que vivía un hidalgo de los de lanza en astillero, adarga antigua, rocín flaco y galgo corredor. Una olla de algo más vaca que carnero, salpicón las más noches, duelos y quebrantos los sábados, lantejas los viernes, algún palomino de añadidura los domingos, consumían las tres partes de su hacienda.`,
   },
+  {
+    title: 'Accent Drill',
+    evaluationReady: false,
+    language: 'es',
+    source: 'Accent practice (á é í ó ú ñ ü ¿ ¡)',
+    text: `¿Qué pasó ayer? María comió más después de la lección. ¡Fantástico! El pequeño niño soñó con pingüinos. ¿Cuándo será la próxima reunión? Está aquí, allá y acá también. José pidió café frío. ¿Por qué no viniste tú? Añadí información útil. La canción tenía emoción. ¡Qué día tan extraño! Raúl explicó la situación económica. ¿Cómo estás? Él habló rápido. Mamá preparó sándwiches deliciosos. ¡Increíble actuación! ¿Dónde quedó mi teléfono? Según él, llegará mañana temprano.`,
+  },
 ]
 
 export default function TextInput({ onSubmit, currentText }: TextInputProps) {
