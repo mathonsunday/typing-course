@@ -39,7 +39,7 @@ export interface UserProgress {
 const STORAGE_KEY = 'typing-course-progress'
 
 const DEFAULT_SETTINGS: UserSettings = {
-  showFingerGuide: false,
+  showFingerGuide: true,
   darkMode: true,
   adaptiveModeEnabled: false,
   soundEnabled: true,

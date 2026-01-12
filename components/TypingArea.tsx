@@ -6,6 +6,7 @@ import { settingsAtom, saveSessionAtom } from '@/stores/progress'
 import { playKeystrokeSound, playErrorSound, playCompletionSound, ensureAudioReady } from '@/lib/sounds'
 import { trackKeystroke, createSession, calculateWPM } from '@/lib/analytics'
 import type { CharacterStats } from '@/lib/storage'
+import FingerGuide from './FingerGuide'
 
 interface TypingAreaProps {
   text: string
@@ -280,11 +281,16 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
             </span>
           </div>
         </div>
-        {settings.soundEnabled && (
-          <div className="text-zinc-500 text-xs">
-            🔊 Sound on
-          </div>
-        )}
+        <div className="flex items-center gap-4">
+          {settings.showFingerGuide && !isComplete && text[currentIndex] && (
+            <FingerGuide currentChar={text[currentIndex]} />
+          )}
+          {settings.soundEnabled && (
+            <div className="text-zinc-500 text-xs">
+              🔊 Sound on
+            </div>
+          )}
+        </div>
       </div>
       
       {/* Typing area */}
@@ -375,6 +381,16 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
           style={{ width: `${(currentIndex / text.length) * 100}%` }}
         />
       </div>
+      
+      {/* Finger placement guide */}
+      {settings.showFingerGuide && !isComplete && (
+        <div className="mt-6">
+          <FingerGuide 
+            currentChar={text[currentIndex]} 
+            showFullKeyboard={true}
+          />
+        </div>
+      )}
     </div>
   )
 }
