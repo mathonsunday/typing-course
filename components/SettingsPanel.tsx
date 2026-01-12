@@ -18,7 +18,6 @@ const AMBIANCE_STYLES = [
   { id: 'nebula', name: 'Nebula' },
   { id: 'eyes', name: '👁 Eyes' },
   { id: 'shadowcat', name: '🐱 Shadow Cat' },
-  { id: 'watcher', name: '👤 Watcher' },
   { id: 'shadows', name: '🌑 Shadows' },
 ] as const
 

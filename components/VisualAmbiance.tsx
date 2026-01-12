@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 
-export type AmbianceStyle = 'none' | 'geometric' | 'fireflies' | 'nebula' | 'eyes' | 'shadowcat' | 'watcher' | 'shadows'
+export type AmbianceStyle = 'none' | 'geometric' | 'fireflies' | 'nebula' | 'eyes' | 'shadowcat' | 'shadows'
 
 interface VisualAmbianceProps {
   style: AmbianceStyle
@@ -59,9 +59,6 @@ export default function VisualAmbiance({ style, intensity = 0.5 }: VisualAmbianc
           break
         case 'shadowcat':
           drawShadowCat(ctx, stateRef.current, width, height, timeRef.current, intensity)
-          break
-        case 'watcher':
-          drawWatcher(ctx, stateRef.current, width, height, timeRef.current, intensity)
           break
         case 'shadows':
           drawShadows(ctx, stateRef.current, width, height, timeRef.current, intensity)
@@ -123,8 +120,9 @@ function initializeState(
       break
       
     case 'eyes':
+      // Many more eyes - 8 to 20 pairs based on intensity
       stateRef.current = {
-        eyePairs: Array.from({ length: Math.floor(3 + intensity * 4) }, () => createEyePair(width, height)),
+        eyePairs: Array.from({ length: Math.floor(8 + intensity * 12) }, () => createEyePair(width, height)),
       }
       break
       
@@ -137,13 +135,6 @@ function initializeState(
           createShadowCatState(width, height, 4), // bottom-right
           createShadowCatState(width, height, 6), // bottom-left
         ],
-      }
-      break
-      
-    case 'watcher':
-      stateRef.current = {
-        watcher: createWatcherState(width, height),
-        glimpses: [],
       }
       break
       
@@ -701,7 +692,7 @@ function drawEyes(
     
     const blinkAmount = pair.isBlinking ? Math.sin(pair.blinkProgress * Math.PI) : 0
     const eyeOpenness = 1 - blinkAmount * 0.95
-    const currentOpacity = pair.opacity * intensity * 0.5
+    const currentOpacity = pair.opacity * intensity * 0.8 // Boosted visibility
     
     if (currentOpacity < 0.01) return
     
@@ -844,7 +835,7 @@ function drawSingleCat(
   const targetLookAngle = Math.atan2(centerY - cat.y, centerX - cat.x)
   cat.lookAngle += (targetLookAngle - cat.lookAngle) * 0.008
   
-  const opacity = (cat.opacity + breathEffect) * intensity * 0.5
+  const opacity = (cat.opacity + breathEffect) * intensity * 0.7 // Boosted visibility
   if (opacity < 0.01) return
   
   const s = cat.scale * 55
@@ -939,229 +930,6 @@ function drawShadowCat(
   state.cats.forEach((cat: ShadowCatState) => {
     drawSingleCat(ctx, cat, width, height, intensity)
   })
-}
-
-// ============ Spooky: Watcher Effect (Full creepy figure) ============
-
-interface WatcherState {
-  x: number
-  y: number
-  opacity: number
-  targetOpacity: number
-  figureHeight: number
-  sway: number
-  swaySpeed: number
-  breathPhase: number
-  fadeTimer: number
-  visible: boolean
-  headTilt: number
-  armPhase: number
-  hairWave: number
-  side: number // 0 = left, 1 = right
-}
-
-function createWatcherState(width: number, height: number): WatcherState {
-  const side = Math.random() < 0.5 ? 0 : 1
-  return {
-    x: side === 0 ? width * 0.06 : width * 0.94,
-    y: height,
-    opacity: 0,
-    targetOpacity: 0,
-    figureHeight: height * 0.55 + Math.random() * height * 0.1,
-    sway: Math.random() * Math.PI * 2,
-    swaySpeed: 0.15 + Math.random() * 0.1,
-    breathPhase: Math.random() * Math.PI * 2,
-    fadeTimer: 80 + Math.random() * 150,
-    visible: false,
-    headTilt: 0,
-    armPhase: Math.random() * Math.PI * 2,
-    hairWave: Math.random() * Math.PI * 2,
-    side,
-  }
-}
-
-function drawWatcher(
-  ctx: CanvasRenderingContext2D,
-  state: any,
-  width: number,
-  height: number,
-  time: number,
-  intensity: number
-): void {
-  const watcher = state.watcher as WatcherState
-  
-  // Appear/disappear logic
-  watcher.fadeTimer--
-  if (watcher.fadeTimer <= 0) {
-    if (watcher.visible) {
-      watcher.targetOpacity = 0
-      if (watcher.opacity < 0.01) {
-        watcher.visible = false
-        watcher.fadeTimer = 150 + Math.random() * 300
-        watcher.side = watcher.side === 0 ? 1 : 0
-        watcher.x = watcher.side === 0 ? width * 0.06 : width * 0.94
-      }
-    } else {
-      watcher.visible = true
-      watcher.targetOpacity = 1
-      watcher.fadeTimer = 400 + Math.random() * 600
-    }
-  }
-  
-  watcher.opacity += (watcher.targetOpacity - watcher.opacity) * 0.008
-  
-  // Animation
-  watcher.sway += watcher.swaySpeed * 0.01
-  watcher.breathPhase += 0.012
-  watcher.armPhase += 0.008
-  watcher.hairWave += 0.015
-  
-  // Slow head tilt toward center
-  const targetTilt = watcher.side === 0 ? 0.1 : -0.1
-  watcher.headTilt += (targetTilt - watcher.headTilt) * 0.005
-  
-  const swayAmount = Math.sin(watcher.sway) * 5
-  const breathScale = 1 + Math.sin(watcher.breathPhase) * 0.015
-  
-  const opacity = watcher.opacity * intensity * 0.35
-  if (opacity < 0.01) return
-  
-  const h = watcher.figureHeight
-  const bodyWidth = h * 0.18
-  const headSize = h * 0.12
-  const flip = watcher.side === 0 ? 1 : -1
-  
-  ctx.save()
-  ctx.translate(watcher.x + swayAmount, watcher.y)
-  ctx.scale(flip * breathScale, 1)
-  
-  // === BODY (tattered dress/robe shape) ===
-  ctx.fillStyle = `hsla(260, 25%, 3%, ${opacity})`
-  ctx.beginPath()
-  ctx.moveTo(-bodyWidth * 0.8, 0) // Bottom left
-  ctx.lineTo(-bodyWidth * 1.2, 0) // Spread at bottom
-  ctx.quadraticCurveTo(-bodyWidth * 0.9, -h * 0.3, -bodyWidth * 0.5, -h * 0.5) // Left side curves in
-  ctx.lineTo(-bodyWidth * 0.35, -h * 0.7) // Shoulder area
-  ctx.quadraticCurveTo(0, -h * 0.72, bodyWidth * 0.35, -h * 0.7) // Across shoulders
-  ctx.lineTo(bodyWidth * 0.5, -h * 0.5) // Right shoulder down
-  ctx.quadraticCurveTo(bodyWidth * 0.9, -h * 0.3, bodyWidth * 1.2, 0) // Right side
-  ctx.lineTo(bodyWidth * 0.8, 0) // Bottom right
-  ctx.closePath()
-  ctx.fill()
-  
-  // Tattered bottom edges
-  for (let i = 0; i < 5; i++) {
-    const tearX = -bodyWidth + (i * bodyWidth * 0.5)
-    const tearLen = 15 + Math.sin(watcher.hairWave + i) * 8
-    ctx.beginPath()
-    ctx.moveTo(tearX, 0)
-    ctx.lineTo(tearX + 5, tearLen)
-    ctx.lineTo(tearX + 10, 0)
-    ctx.fill()
-  }
-  
-  // === ARM (reaching/hanging) ===
-  const armSway = Math.sin(watcher.armPhase) * 0.05
-  ctx.save()
-  ctx.translate(-bodyWidth * 0.5, -h * 0.55)
-  ctx.rotate(-0.3 + armSway)
-  
-  // Upper arm
-  ctx.fillStyle = `hsla(260, 25%, 3%, ${opacity})`
-  ctx.beginPath()
-  ctx.ellipse(0, h * 0.1, bodyWidth * 0.15, h * 0.12, 0, 0, Math.PI * 2)
-  ctx.fill()
-  
-  // Forearm
-  ctx.beginPath()
-  ctx.ellipse(-bodyWidth * 0.1, h * 0.22, bodyWidth * 0.12, h * 0.1, -0.2, 0, Math.PI * 2)
-  ctx.fill()
-  
-  // Hand (claw-like)
-  const handX = -bodyWidth * 0.15
-  const handY = h * 0.32
-  ctx.beginPath()
-  ctx.arc(handX, handY, bodyWidth * 0.1, 0, Math.PI * 2)
-  ctx.fill()
-  
-  // Fingers
-  for (let f = 0; f < 4; f++) {
-    const fingerAngle = -0.4 + f * 0.25
-    ctx.beginPath()
-    ctx.moveTo(handX, handY)
-    ctx.lineTo(
-      handX + Math.cos(fingerAngle) * bodyWidth * 0.2,
-      handY + Math.sin(fingerAngle) * bodyWidth * 0.25 + h * 0.05
-    )
-    ctx.lineWidth = 2
-    ctx.strokeStyle = `hsla(260, 25%, 3%, ${opacity})`
-    ctx.stroke()
-  }
-  ctx.restore()
-  
-  // === HEAD ===
-  ctx.save()
-  ctx.translate(0, -h * 0.78)
-  ctx.rotate(watcher.headTilt)
-  
-  // Head shape
-  ctx.fillStyle = `hsla(260, 25%, 3%, ${opacity})`
-  ctx.beginPath()
-  ctx.ellipse(0, 0, headSize * 0.8, headSize, 0, 0, Math.PI * 2)
-  ctx.fill()
-  
-  // === HAIR (long, stringy) ===
-  ctx.fillStyle = `hsla(260, 30%, 2%, ${opacity})`
-  for (let strand = 0; strand < 8; strand++) {
-    const strandX = -headSize * 0.7 + strand * headSize * 0.2
-    const strandWave = Math.sin(watcher.hairWave + strand * 0.5) * 5
-    const strandLen = headSize * (1.5 + Math.random() * 0.5)
-    
-    ctx.beginPath()
-    ctx.moveTo(strandX, -headSize * 0.3)
-    ctx.quadraticCurveTo(
-      strandX + strandWave,
-      strandLen * 0.5,
-      strandX + strandWave * 1.5,
-      strandLen
-    )
-    ctx.lineWidth = 3 + Math.random() * 2
-    ctx.strokeStyle = `hsla(260, 30%, 2%, ${opacity * 0.8})`
-    ctx.stroke()
-  }
-  
-  // === FACE (hollow, disturbing) ===
-  // Eye sockets (dark voids)
-  const eyeY = -headSize * 0.1
-  const eyeSpacing = headSize * 0.3
-  
-  for (let i = -1; i <= 1; i += 2) {
-    const eyeX = i * eyeSpacing
-    
-    // Deep socket
-    ctx.fillStyle = `hsla(0, 0%, 0%, ${opacity})`
-    ctx.beginPath()
-    ctx.ellipse(eyeX, eyeY, headSize * 0.18, headSize * 0.22, 0, 0, Math.PI * 2)
-    ctx.fill()
-    
-    // Tiny pinprick of light deep in socket
-    if (watcher.opacity > 0.3) {
-      const glowOpacity = (watcher.opacity - 0.3) * opacity * 1.5
-      ctx.fillStyle = `hsla(200, 10%, 40%, ${glowOpacity})`
-      ctx.beginPath()
-      ctx.arc(eyeX, eyeY + headSize * 0.02, headSize * 0.04, 0, Math.PI * 2)
-      ctx.fill()
-    }
-  }
-  
-  // Mouth (slightly open, dark)
-  ctx.fillStyle = `hsla(0, 0%, 0%, ${opacity * 0.8})`
-  ctx.beginPath()
-  ctx.ellipse(0, headSize * 0.4, headSize * 0.2, headSize * 0.1, 0, 0, Math.PI * 2)
-  ctx.fill()
-  
-  ctx.restore() // head
-  ctx.restore() // main
 }
 
 // ============ Spooky: Creeping Shadows Effect (More visible) ============
