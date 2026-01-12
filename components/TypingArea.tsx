@@ -35,6 +35,7 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
   const [elapsedMs, setElapsedMs] = useState(0)
   const [lastKeystrokeTime, setLastKeystrokeTime] = useState<number | null>(null)
   const [isIdle, setIsIdle] = useState(false)
+  const [isPaused, setIsPaused] = useState(false)
   
   // Idle timeout in ms (5 seconds)
   const IDLE_TIMEOUT = 5000
@@ -150,29 +151,49 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
       const currentlyIdle = timeSinceLastKeystroke > IDLE_TIMEOUT
       setIsIdle(currentlyIdle)
       
-      // Only accumulate time if not idle
-      if (!currentlyIdle && lastTickRef.current) {
+      // Only accumulate time if not idle AND not paused
+      const shouldCountTime = !currentlyIdle && !isPaused
+      if (shouldCountTime && lastTickRef.current) {
         const delta = now - lastTickRef.current
         activeTimeRef.current += delta
         setElapsedMs(activeTimeRef.current)
         setCurrentWPM(calculateWPM(correctCountRef.current, activeTimeRef.current))
       }
       
-      lastTickRef.current = currentlyIdle ? null : now
+      lastTickRef.current = shouldCountTime ? now : null
     }, 100)
     
     return () => clearInterval(interval)
-  }, [startTime, isComplete, lastKeystrokeTime, IDLE_TIMEOUT])
+  }, [startTime, isComplete, isPaused, lastKeystrokeTime, IDLE_TIMEOUT])
   
   // Reference for hidden input that handles dead key composition
   const hiddenInputRef = useRef<HTMLInputElement>(null)
   // Track if we're in the middle of composing (dead key active)
   const isComposingRef = useRef(false)
   
-  // Handle special keys (backspace, enter, etc.)
+  // Handle special keys (backspace, enter, escape for pause)
   const handleKeyDown = useCallback(async (e: React.KeyboardEvent) => {
-    // Ignore modifier-only presses and navigation
-    if (e.key === 'Tab' || e.key === 'Escape') return
+    // Tab - ignore
+    if (e.key === 'Tab') return
+    
+    // Escape - toggle pause (only during active session)
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      if (startTime && !isComplete) {
+        setIsPaused(prev => !prev)
+      }
+      return
+    }
+    
+    // Space or Enter - resume from pause
+    if (isPaused && (e.key === ' ' || e.key === 'Enter')) {
+      e.preventDefault()
+      setIsPaused(false)
+      return
+    }
+    
+    // Block all input while paused
+    if (isPaused) return
     
     // Handle restart with Enter when complete
     if (isComplete && e.key === 'Enter') {
@@ -197,11 +218,11 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
       }
       return
     }
-  }, [isComplete, resetSession, onReset, currentIndex])
+  }, [isComplete, isPaused, startTime, resetSession, onReset, currentIndex])
   
   // Process a typed character (shared between direct input and composition)
   const processCharacter = useCallback(async (char: string) => {
-    if (!char || isComplete) return
+    if (!char || isComplete || isPaused) return
     
     // Block input if there are unfixed errors - must backspace to fix first
     if (errors.size > 0) {
@@ -280,7 +301,7 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
       saveSession(session)
       onComplete?.()
     }
-  }, [currentIndex, text, startTime, isComplete, isIdle, settings, errors, saveSession, onComplete])
+  }, [currentIndex, text, startTime, isComplete, isIdle, isPaused, settings, errors, saveSession, onComplete])
   
   // Handle composition events (for dead key / accent input)
   const handleCompositionStart = useCallback(() => {
@@ -368,8 +389,11 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
           <div className="border-l border-zinc-700 pl-6 flex items-center gap-2">
             <span className="text-zinc-500">Daily</span>{' '}
             <DailyGoal variant="compact" currentSessionMs={elapsedMs} />
-            {isIdle && startTime && !isComplete && (
-              <span className="text-yellow-500 text-xs animate-pulse">⏸ Paused</span>
+            {isPaused && !isComplete && (
+              <span className="text-amber-400 text-xs font-medium">⏸ Paused</span>
+            )}
+            {isIdle && !isPaused && startTime && !isComplete && (
+              <span className="text-yellow-500/70 text-xs">⏸ Idle</span>
             )}
             {errors.size > 0 && !isComplete && (
               <span className="text-red-400 text-xs">← fix error</span>
@@ -377,6 +401,16 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
           </div>
         </div>
         <div className="flex items-center gap-4">
+          {/* Pause button - only show during active session */}
+          {startTime && !isComplete && (
+            <button
+              onClick={() => setIsPaused(prev => !prev)}
+              className="text-zinc-500 hover:text-zinc-300 text-xs transition-colors"
+              title="Press Esc to pause/resume"
+            >
+              {isPaused ? '▶ Resume' : '⏸ Pause'}
+            </button>
+          )}
           {settings.soundEnabled && (
             <div className="text-zinc-500 text-xs">
               🔊 Sound on
@@ -434,6 +468,24 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
         {currentIndex === 0 && !startTime && (
           <div className="absolute inset-0 flex items-center justify-center bg-surface-raised/80 rounded-xl">
             <p className="text-zinc-500">Start typing to begin</p>
+          </div>
+        )}
+        
+        {/* Pause overlay */}
+        {isPaused && !isComplete && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-surface-raised/90 rounded-xl backdrop-blur-sm">
+            <div className="text-center">
+              <div className="text-4xl mb-3">⏸️</div>
+              <h2 className="text-xl font-semibold text-zinc-100 mb-2">
+                Paused
+              </h2>
+              <p className="text-zinc-500 text-sm mb-4">
+                Take your time — the timer is stopped
+              </p>
+              <p className="text-zinc-400 text-sm">
+                Press <kbd className="px-2 py-1 bg-surface rounded text-zinc-300">Space</kbd> or <kbd className="px-2 py-1 bg-surface rounded text-zinc-300">Esc</kbd> to resume
+              </p>
+            </div>
           </div>
         )}
         
