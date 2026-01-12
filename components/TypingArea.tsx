@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useAtom, useSetAtom } from 'jotai'
 import { settingsAtom, saveSessionAtom } from '@/stores/progress'
-import { playKeystroke, playError, playCompletion, ensureAudioReady } from '@/lib/keyboardSounds'
+import { playKeystrokeSound, playErrorSound, playCompletionSound, ensureAudioReady } from '@/lib/sounds'
 import { trackKeystroke, createSession, calculateWPM } from '@/lib/analytics'
 import type { CharacterStats } from '@/lib/storage'
 import FingerGuide from './FingerGuide'
@@ -230,12 +230,12 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
     if (isCorrect) {
       correctCountRef.current++
       if (settings.soundEnabled) {
-        playKeystroke(settings.soundProfile || 'mxBrown', settings.soundVolume)
+        playKeystrokeSound(settings.soundVolume)
       }
     } else {
       setErrors(prev => new Set(prev).add(currentIndex))
       if (settings.soundEnabled) {
-        playError(settings.soundProfile || 'mxBrown', settings.soundVolume)
+        playErrorSound(settings.soundVolume)
       }
     }
     
@@ -251,7 +251,7 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
       setCurrentWPM(calculateWPM(correctCountRef.current, duration))
       
       if (settings.soundEnabled) {
-        playCompletion(settings.soundVolume)
+        playCompletionSound(settings.soundVolume)
       }
       
       // Save session

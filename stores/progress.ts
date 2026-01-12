@@ -16,7 +16,6 @@ const DEFAULT_SETTINGS: UserSettings = {
   adaptiveModeEnabled: false,
   soundEnabled: true,
   soundVolume: 0.5,
-  soundProfile: 'mxBrown',
   ambianceStyle: 'both',
   ambianceIntensity: 0.5,
   customTextLibrary: [],
