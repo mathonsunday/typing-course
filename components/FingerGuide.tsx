@@ -6,6 +6,15 @@ import { isSpanishAccent } from '@/lib/spanishAccents'
 // Finger indices: 0=thumb, 1=index, 2=middle, 3=ring, 4=pinky
 type ActiveFinger = { hand: 'left' | 'right'; finger: number }
 
+// Characters that require holding shift
+const SHIFTED_CHARS = new Set([
+  // Uppercase letters
+  ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+  // Shifted punctuation
+  '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+',
+  '{', '}', '|', ':', '"', '<', '>', '?', '~',
+])
+
 // Map each key to its correct finger
 const KEY_TO_FINGER: Record<string, ActiveFinger> = {
   // Left pinky
@@ -106,6 +115,12 @@ interface FingerGuideProps {
   currentChar?: string
 }
 
+// Get the shift key finger for the opposite hand
+function getShiftFinger(charHand: 'left' | 'right'): ActiveFinger {
+  // Use opposite hand's pinky for shift
+  return { hand: charHand === 'left' ? 'right' : 'left', finger: 4 }
+}
+
 export default function FingerGuide({ currentChar }: FingerGuideProps) {
   // Check if this is a Spanish accent character
   if (currentChar && isSpanishAccent(currentChar)) {
@@ -121,6 +136,22 @@ export default function FingerGuide({ currentChar }: FingerGuideProps) {
   
   // Regular character
   const fingerInfo = currentChar ? KEY_TO_FINGER[currentChar] : undefined
+  
+  // Check if this character requires shift
+  const needsShift = currentChar && SHIFTED_CHARS.has(currentChar)
+  
+  // If shift is needed, show both shift finger and character finger
+  if (needsShift && fingerInfo) {
+    const shiftFinger = getShiftFinger(fingerInfo.hand)
+    return (
+      <div className="bg-surface-raised rounded-xl p-4 border border-zinc-800">
+        <HandDiagram activeFingers={[shiftFinger, fingerInfo]} />
+        <p className="text-xs text-zinc-500 text-center mt-2">
+          Hold {shiftFinger.hand} Shift
+        </p>
+      </div>
+    )
+  }
   
   return (
     <div className="bg-surface-raised rounded-xl p-4 border border-zinc-800">
