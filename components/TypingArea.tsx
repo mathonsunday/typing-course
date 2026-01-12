@@ -200,6 +200,14 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
   const processCharacter = useCallback(async (char: string) => {
     if (!char || isComplete) return
     
+    // Block input if there are unfixed errors - must backspace to fix first
+    if (errors.size > 0) {
+      if (settings.soundEnabled) {
+        playErrorSound(settings.soundVolume * 0.5) // Subtle reminder
+      }
+      return
+    }
+    
     // Ensure audio is ready (browser autoplay policy)
     await ensureAudioReady()
     
@@ -269,7 +277,7 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
       saveSession(session)
       onComplete?.()
     }
-  }, [currentIndex, text, startTime, isComplete, isIdle, settings, saveSession, onComplete])
+  }, [currentIndex, text, startTime, isComplete, isIdle, settings, errors, saveSession, onComplete])
   
   // Handle composition events (for dead key / accent input)
   const handleCompositionStart = useCallback(() => {
@@ -368,6 +376,9 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
             <DailyGoal variant="compact" currentSessionMs={elapsedMs} />
             {isIdle && startTime && !isComplete && (
               <span className="text-yellow-500 text-xs animate-pulse">⏸ Paused</span>
+            )}
+            {errors.size > 0 && !isComplete && (
+              <span className="text-red-400 text-xs">← fix error</span>
             )}
           </div>
         </div>
