@@ -155,7 +155,7 @@ export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           <div className="flex items-center justify-between">
             <div>
               <div className="text-sm font-medium text-zinc-100">Finger placement guide</div>
-              <div className="text-xs text-zinc-500">Show recommended finger positions</div>
+              <div className="text-xs text-zinc-500">Show hand diagram for correct fingers</div>
             </div>
             <button
               onClick={() => setSettings({ showFingerGuide: !settings.showFingerGuide })}
@@ -170,32 +170,6 @@ export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
               />
             </button>
           </div>
-          
-          {/* Finger guide mode selector */}
-          {settings.showFingerGuide && (
-            <div>
-              <div className="text-sm font-medium text-zinc-100 mb-2">Guide style</div>
-              <div className="flex gap-2">
-                {[
-                  { mode: 'text' as const, label: 'Text', desc: 'Simple text' },
-                  { mode: 'hands' as const, label: 'Hands', desc: 'Hand diagram' },
-                  { mode: 'keyboard' as const, label: 'Keyboard', desc: 'Color keys' },
-                ].map(({ mode, label }) => (
-                  <button
-                    key={mode}
-                    onClick={() => setSettings({ fingerGuideMode: mode })}
-                    className={`flex-1 px-3 py-2 rounded-lg text-sm transition-colors ${
-                      settings.fingerGuideMode === mode
-                        ? 'bg-accent text-white'
-                        : 'bg-surface text-zinc-400 hover:bg-zinc-800'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
           
           {/* Visual ambiance */}
           <div className="pt-4 border-t border-zinc-800">

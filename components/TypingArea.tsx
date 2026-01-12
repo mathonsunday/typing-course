@@ -431,10 +431,7 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
       {/* Finger placement guide */}
       {settings.showFingerGuide && !isComplete && (
         <div className="mt-6">
-          <FingerGuide 
-            currentChar={text[currentIndex]} 
-            mode={settings.fingerGuideMode}
-          />
+          <FingerGuide currentChar={text[currentIndex]} />
         </div>
       )}
     </div>

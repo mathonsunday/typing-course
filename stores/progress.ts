@@ -11,12 +11,11 @@ function getTodayDateString(): string {
 // Default values
 const DEFAULT_SETTINGS: UserSettings = {
   showFingerGuide: true,
-  fingerGuideMode: 'hands',
   darkMode: true,
   adaptiveModeEnabled: false,
   soundEnabled: true,
   soundVolume: 0.5,
-  ambianceStyle: 'both',
+  ambianceStyle: 'nebula',
   ambianceIntensity: 0.5,
   customTextLibrary: [],
 }

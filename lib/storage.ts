@@ -20,12 +20,10 @@ export interface TypingSession {
   bigramAccuracy: Record<string, CharacterStats>
 }
 
-export type FingerGuideMode = 'hands' | 'text' | 'keyboard'
 export type AmbianceStyle = 'none' | 'geometric' | 'fireflies' | 'nebula' | 'eyes' | 'shadowcat' | 'shadows' | 'starfield'
 
 export interface UserSettings {
   showFingerGuide: boolean
-  fingerGuideMode: FingerGuideMode
   darkMode: boolean
   adaptiveModeEnabled: boolean
   soundEnabled: boolean
@@ -53,12 +51,11 @@ const STORAGE_KEY = 'typing-course-progress'
 
 const DEFAULT_SETTINGS: UserSettings = {
   showFingerGuide: true,
-  fingerGuideMode: 'hands',
   darkMode: true,
   adaptiveModeEnabled: false,
   soundEnabled: true,
   soundVolume: 0.5,
-  ambianceStyle: 'both',
+  ambianceStyle: 'nebula',
   ambianceIntensity: 0.5,
   customTextLibrary: [],
 }
