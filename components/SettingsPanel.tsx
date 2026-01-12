@@ -19,6 +19,9 @@ const AMBIANCE_STYLES = [
   { id: 'eyes', name: '👁 Eyes' },
   { id: 'shadowcat', name: '🐱 Shadow Cat' },
   { id: 'shadows', name: '🌑 Shadows' },
+  { id: 'starfield', name: '🚀 Starfield' },
+  { id: 'deepsea', name: '🌊 Deep Sea' },
+  { id: 'rain', name: '🌧 Rain' },
 ] as const
 
 export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {

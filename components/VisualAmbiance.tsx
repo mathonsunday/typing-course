@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 
-export type AmbianceStyle = 'none' | 'geometric' | 'fireflies' | 'nebula' | 'eyes' | 'shadowcat' | 'shadows'
+export type AmbianceStyle = 'none' | 'geometric' | 'fireflies' | 'nebula' | 'eyes' | 'shadowcat' | 'shadows' | 'starfield' | 'deepsea' | 'rain'
 
 interface VisualAmbianceProps {
   style: AmbianceStyle
@@ -62,6 +62,15 @@ export default function VisualAmbiance({ style, intensity = 0.5 }: VisualAmbianc
           break
         case 'shadows':
           drawShadows(ctx, stateRef.current, width, height, timeRef.current, intensity)
+          break
+        case 'starfield':
+          drawStarfield(ctx, stateRef.current, width, height, timeRef.current, intensity)
+          break
+        case 'deepsea':
+          drawDeepSea(ctx, stateRef.current, width, height, timeRef.current, intensity)
+          break
+        case 'rain':
+          drawRain(ctx, stateRef.current, width, height, timeRef.current, intensity)
           break
       }
       
@@ -142,6 +151,34 @@ function initializeState(
       stateRef.current = {
         shadowTendrils: Array.from({ length: 6 }, () => createShadowTendril(width, height)),
         shadowPools: Array.from({ length: 4 }, () => createShadowPool(width, height)),
+      }
+      break
+      
+    case 'starfield':
+      stateRef.current = {
+        stars: Array.from({ length: Math.floor(150 + intensity * 200) }, () => createSpaceStar(width, height)),
+        nebulaClouds: Array.from({ length: 3 }, () => createSpaceNebula(width, height)),
+        shootingStars: [],
+        lastShootingStar: 0,
+      }
+      break
+      
+    case 'deepsea':
+      stateRef.current = {
+        particles: Array.from({ length: Math.floor(40 + intensity * 60) }, () => createSeaParticle(width, height)),
+        creatures: Array.from({ length: Math.floor(4 + intensity * 6) }, () => createSeaCreature(width, height)),
+        lightRays: Array.from({ length: 5 }, (_, i) => createLightRay(width, height, i)),
+        bubbles: Array.from({ length: Math.floor(20 + intensity * 30) }, () => createBubble(width, height)),
+      }
+      break
+      
+    case 'rain':
+      stateRef.current = {
+        drops: Array.from({ length: Math.floor(100 + intensity * 200) }, () => createRaindrop(width, height)),
+        streaks: Array.from({ length: Math.floor(30 + intensity * 50) }, () => createRainStreak(width, height)),
+        splashes: [],
+        cityLights: Array.from({ length: Math.floor(15 + intensity * 20) }, () => createCityLight(width, height)),
+        lightning: { active: false, opacity: 0, timer: 500 + Math.random() * 1000 },
       }
       break
   }
@@ -1151,4 +1188,616 @@ function drawShadows(
       angle += (Math.random() - 0.5) * 0.15
     }
   })
+}
+
+// ============ Environment: Starfield Effect ============
+
+interface SpaceStar {
+  x: number
+  y: number
+  z: number // depth for parallax
+  size: number
+  brightness: number
+  twinklePhase: number
+  twinkleSpeed: number
+  hue: number
+}
+
+interface SpaceNebula {
+  x: number
+  y: number
+  radius: number
+  hue: number
+  drift: number
+}
+
+interface ShootingStar {
+  x: number
+  y: number
+  vx: number
+  vy: number
+  length: number
+  life: number
+  maxLife: number
+}
+
+function createSpaceStar(width: number, height: number): SpaceStar {
+  const colorRoll = Math.random()
+  let hue
+  if (colorRoll < 0.6) hue = 220 + Math.random() * 20 // Blue-white
+  else if (colorRoll < 0.8) hue = 45 + Math.random() * 15 // Warm yellow
+  else if (colorRoll < 0.9) hue = 0 + Math.random() * 20 // Red giant
+  else hue = 200 + Math.random() * 40 // Cyan
+  
+  return {
+    x: Math.random() * width,
+    y: Math.random() * height,
+    z: Math.random() * 3 + 0.5,
+    size: Math.random() * 2 + 0.5,
+    brightness: Math.random() * 0.5 + 0.5,
+    twinklePhase: Math.random() * Math.PI * 2,
+    twinkleSpeed: 0.5 + Math.random() * 2,
+    hue,
+  }
+}
+
+function createSpaceNebula(width: number, height: number): SpaceNebula {
+  return {
+    x: Math.random() * width,
+    y: Math.random() * height,
+    radius: 200 + Math.random() * 300,
+    hue: Math.random() < 0.5 ? 280 + Math.random() * 40 : 200 + Math.random() * 30,
+    drift: Math.random() * Math.PI * 2,
+  }
+}
+
+function drawStarfield(
+  ctx: CanvasRenderingContext2D,
+  state: any,
+  width: number,
+  height: number,
+  time: number,
+  intensity: number
+): void {
+  const { stars, nebulaClouds, shootingStars } = state
+  
+  // Deep space background gradient
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, height)
+  bgGrad.addColorStop(0, `hsla(240, 30%, 3%, ${intensity * 0.3})`)
+  bgGrad.addColorStop(0.5, `hsla(260, 25%, 2%, ${intensity * 0.2})`)
+  bgGrad.addColorStop(1, `hsla(220, 35%, 4%, ${intensity * 0.3})`)
+  ctx.fillStyle = bgGrad
+  ctx.fillRect(0, 0, width, height)
+  
+  // Nebula clouds (background glow)
+  nebulaClouds.forEach((nebula: SpaceNebula) => {
+    nebula.drift += 0.002
+    const wobbleX = Math.sin(nebula.drift) * 20
+    const wobbleY = Math.cos(nebula.drift * 0.7) * 15
+    
+    const gradient = ctx.createRadialGradient(
+      nebula.x + wobbleX, nebula.y + wobbleY, 0,
+      nebula.x + wobbleX, nebula.y + wobbleY, nebula.radius
+    )
+    gradient.addColorStop(0, `hsla(${nebula.hue}, 60%, 30%, ${intensity * 0.15})`)
+    gradient.addColorStop(0.4, `hsla(${nebula.hue + 20}, 50%, 20%, ${intensity * 0.08})`)
+    gradient.addColorStop(1, `hsla(${nebula.hue}, 40%, 10%, 0)`)
+    
+    ctx.fillStyle = gradient
+    ctx.fillRect(0, 0, width, height)
+  })
+  
+  // Stars with parallax movement (drifting through space)
+  const baseSpeed = 0.3 * intensity
+  
+  stars.forEach((star: SpaceStar) => {
+    // Move stars based on depth (parallax)
+    star.y += baseSpeed * star.z
+    star.x -= baseSpeed * 0.1 * star.z
+    
+    // Wrap around
+    if (star.y > height + 10) {
+      star.y = -10
+      star.x = Math.random() * width
+    }
+    if (star.x < -10) star.x = width + 10
+    
+    star.twinklePhase += star.twinkleSpeed * 0.02
+    const twinkle = Math.sin(star.twinklePhase) * 0.3 + 0.7
+    const currentBrightness = star.brightness * twinkle * intensity
+    
+    // Star glow
+    const glowSize = star.size * (3 + star.z)
+    const glowGrad = ctx.createRadialGradient(star.x, star.y, 0, star.x, star.y, glowSize)
+    glowGrad.addColorStop(0, `hsla(${star.hue}, 30%, 90%, ${currentBrightness * 0.6})`)
+    glowGrad.addColorStop(0.3, `hsla(${star.hue}, 40%, 70%, ${currentBrightness * 0.2})`)
+    glowGrad.addColorStop(1, `hsla(${star.hue}, 50%, 50%, 0)`)
+    
+    ctx.fillStyle = glowGrad
+    ctx.beginPath()
+    ctx.arc(star.x, star.y, glowSize, 0, Math.PI * 2)
+    ctx.fill()
+    
+    // Star core
+    ctx.fillStyle = `hsla(${star.hue}, 20%, 95%, ${currentBrightness})`
+    ctx.beginPath()
+    ctx.arc(star.x, star.y, star.size * (0.5 + star.z * 0.2), 0, Math.PI * 2)
+    ctx.fill()
+  })
+  
+  // Occasional shooting stars
+  state.lastShootingStar++
+  if (state.lastShootingStar > 200 + Math.random() * 400 && shootingStars.length < 2) {
+    shootingStars.push({
+      x: Math.random() * width,
+      y: -20,
+      vx: (Math.random() - 0.3) * 8,
+      vy: 6 + Math.random() * 4,
+      length: 80 + Math.random() * 60,
+      life: 0,
+      maxLife: 60 + Math.random() * 40,
+    })
+    state.lastShootingStar = 0
+  }
+  
+  // Draw shooting stars
+  for (let i = shootingStars.length - 1; i >= 0; i--) {
+    const ss = shootingStars[i]
+    ss.x += ss.vx
+    ss.y += ss.vy
+    ss.life++
+    
+    if (ss.life > ss.maxLife || ss.y > height + 50) {
+      shootingStars.splice(i, 1)
+      continue
+    }
+    
+    const fadeIn = Math.min(1, ss.life / 10)
+    const fadeOut = Math.max(0, 1 - (ss.life - ss.maxLife + 20) / 20)
+    const alpha = fadeIn * fadeOut * intensity
+    
+    const gradient = ctx.createLinearGradient(
+      ss.x, ss.y,
+      ss.x - ss.vx * ss.length / 10, ss.y - ss.vy * ss.length / 10
+    )
+    gradient.addColorStop(0, `hsla(200, 80%, 90%, ${alpha})`)
+    gradient.addColorStop(0.3, `hsla(210, 70%, 70%, ${alpha * 0.5})`)
+    gradient.addColorStop(1, `hsla(220, 60%, 50%, 0)`)
+    
+    ctx.strokeStyle = gradient
+    ctx.lineWidth = 2
+    ctx.lineCap = 'round'
+    ctx.beginPath()
+    ctx.moveTo(ss.x, ss.y)
+    ctx.lineTo(ss.x - ss.vx * ss.length / 10, ss.y - ss.vy * ss.length / 10)
+    ctx.stroke()
+  }
+}
+
+// ============ Environment: Deep Sea Effect ============
+
+interface SeaParticle {
+  x: number
+  y: number
+  size: number
+  opacity: number
+  drift: number
+  driftSpeed: number
+  rise: number
+}
+
+interface SeaCreature {
+  x: number
+  y: number
+  size: number
+  hue: number
+  pulsePhase: number
+  pulseSpeed: number
+  driftX: number
+  driftY: number
+  tentacles: number
+  type: 'jellyfish' | 'fish' | 'angler'
+}
+
+interface LightRay {
+  x: number
+  width: number
+  opacity: number
+  sway: number
+  swaySpeed: number
+}
+
+interface Bubble {
+  x: number
+  y: number
+  size: number
+  speed: number
+  wobble: number
+  wobbleSpeed: number
+}
+
+function createSeaParticle(width: number, height: number): SeaParticle {
+  return {
+    x: Math.random() * width,
+    y: Math.random() * height,
+    size: Math.random() * 3 + 1,
+    opacity: Math.random() * 0.4 + 0.2,
+    drift: Math.random() * Math.PI * 2,
+    driftSpeed: 0.01 + Math.random() * 0.02,
+    rise: 0.1 + Math.random() * 0.3,
+  }
+}
+
+function createSeaCreature(width: number, height: number): SeaCreature {
+  const type = Math.random() < 0.5 ? 'jellyfish' : (Math.random() < 0.7 ? 'fish' : 'angler')
+  return {
+    x: Math.random() * width,
+    y: Math.random() * height,
+    size: type === 'jellyfish' ? 30 + Math.random() * 40 : 15 + Math.random() * 25,
+    hue: type === 'angler' ? 180 + Math.random() * 40 : (Math.random() < 0.5 ? 180 + Math.random() * 60 : 280 + Math.random() * 40),
+    pulsePhase: Math.random() * Math.PI * 2,
+    pulseSpeed: 0.02 + Math.random() * 0.03,
+    driftX: (Math.random() - 0.5) * 0.3,
+    driftY: (Math.random() - 0.5) * 0.2,
+    tentacles: 4 + Math.floor(Math.random() * 4),
+    type,
+  }
+}
+
+function createLightRay(width: number, height: number, index: number): LightRay {
+  return {
+    x: (index + 0.5) * (width / 5) + (Math.random() - 0.5) * 100,
+    width: 60 + Math.random() * 80,
+    opacity: 0.1 + Math.random() * 0.1,
+    sway: Math.random() * Math.PI * 2,
+    swaySpeed: 0.005 + Math.random() * 0.01,
+  }
+}
+
+function createBubble(width: number, height: number): Bubble {
+  return {
+    x: Math.random() * width,
+    y: height + Math.random() * 100,
+    size: 2 + Math.random() * 6,
+    speed: 0.5 + Math.random() * 1,
+    wobble: Math.random() * Math.PI * 2,
+    wobbleSpeed: 0.02 + Math.random() * 0.03,
+  }
+}
+
+function drawDeepSea(
+  ctx: CanvasRenderingContext2D,
+  state: any,
+  width: number,
+  height: number,
+  time: number,
+  intensity: number
+): void {
+  const { particles, creatures, lightRays, bubbles } = state
+  
+  // Deep ocean gradient
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, height)
+  bgGrad.addColorStop(0, `hsla(210, 60%, 8%, ${intensity * 0.4})`)
+  bgGrad.addColorStop(0.3, `hsla(220, 55%, 5%, ${intensity * 0.5})`)
+  bgGrad.addColorStop(1, `hsla(230, 50%, 2%, ${intensity * 0.6})`)
+  ctx.fillStyle = bgGrad
+  ctx.fillRect(0, 0, width, height)
+  
+  // Light rays from above
+  lightRays.forEach((ray: LightRay) => {
+    ray.sway += ray.swaySpeed
+    const swayOffset = Math.sin(ray.sway) * 30
+    
+    const rayGrad = ctx.createLinearGradient(ray.x + swayOffset, 0, ray.x + swayOffset + ray.width, height)
+    rayGrad.addColorStop(0, `hsla(190, 70%, 70%, ${ray.opacity * intensity})`)
+    rayGrad.addColorStop(0.3, `hsla(200, 60%, 50%, ${ray.opacity * intensity * 0.5})`)
+    rayGrad.addColorStop(1, `hsla(210, 50%, 30%, 0)`)
+    
+    ctx.fillStyle = rayGrad
+    ctx.beginPath()
+    ctx.moveTo(ray.x + swayOffset, 0)
+    ctx.lineTo(ray.x + swayOffset + ray.width, 0)
+    ctx.lineTo(ray.x + swayOffset + ray.width * 1.5 + 50, height)
+    ctx.lineTo(ray.x + swayOffset - 50, height)
+    ctx.closePath()
+    ctx.fill()
+  })
+  
+  // Floating particles
+  particles.forEach((p: SeaParticle) => {
+    p.drift += p.driftSpeed
+    p.y -= p.rise
+    p.x += Math.sin(p.drift) * 0.5
+    
+    if (p.y < -10) {
+      p.y = height + 10
+      p.x = Math.random() * width
+    }
+    
+    ctx.fillStyle = `hsla(190, 40%, 70%, ${p.opacity * intensity})`
+    ctx.beginPath()
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2)
+    ctx.fill()
+  })
+  
+  // Bubbles
+  bubbles.forEach((b: Bubble) => {
+    b.wobble += b.wobbleSpeed
+    b.y -= b.speed
+    b.x += Math.sin(b.wobble) * 0.8
+    
+    if (b.y < -20) {
+      b.y = height + 20
+      b.x = Math.random() * width
+    }
+    
+    // Bubble highlight
+    const bubbleGrad = ctx.createRadialGradient(
+      b.x - b.size * 0.3, b.y - b.size * 0.3, 0,
+      b.x, b.y, b.size
+    )
+    bubbleGrad.addColorStop(0, `hsla(200, 60%, 90%, ${0.4 * intensity})`)
+    bubbleGrad.addColorStop(0.5, `hsla(200, 50%, 70%, ${0.15 * intensity})`)
+    bubbleGrad.addColorStop(1, `hsla(200, 40%, 50%, ${0.05 * intensity})`)
+    
+    ctx.fillStyle = bubbleGrad
+    ctx.beginPath()
+    ctx.arc(b.x, b.y, b.size, 0, Math.PI * 2)
+    ctx.fill()
+    
+    ctx.strokeStyle = `hsla(200, 50%, 80%, ${0.3 * intensity})`
+    ctx.lineWidth = 0.5
+    ctx.stroke()
+  })
+  
+  // Bioluminescent creatures
+  creatures.forEach((c: SeaCreature) => {
+    c.pulsePhase += c.pulseSpeed
+    c.x += c.driftX
+    c.y += c.driftY + Math.sin(c.pulsePhase * 0.5) * 0.3
+    
+    // Wrap around
+    if (c.x < -c.size * 2) c.x = width + c.size * 2
+    if (c.x > width + c.size * 2) c.x = -c.size * 2
+    if (c.y < -c.size * 2) c.y = height + c.size * 2
+    if (c.y > height + c.size * 2) c.y = -c.size * 2
+    
+    const pulse = Math.sin(c.pulsePhase) * 0.3 + 0.7
+    const glowOpacity = pulse * intensity * 0.7
+    
+    if (c.type === 'jellyfish') {
+      // Jellyfish glow
+      const glowGrad = ctx.createRadialGradient(c.x, c.y, 0, c.x, c.y, c.size * 2)
+      glowGrad.addColorStop(0, `hsla(${c.hue}, 80%, 60%, ${glowOpacity * 0.5})`)
+      glowGrad.addColorStop(0.5, `hsla(${c.hue}, 70%, 50%, ${glowOpacity * 0.2})`)
+      glowGrad.addColorStop(1, `hsla(${c.hue}, 60%, 40%, 0)`)
+      
+      ctx.fillStyle = glowGrad
+      ctx.beginPath()
+      ctx.arc(c.x, c.y, c.size * 2, 0, Math.PI * 2)
+      ctx.fill()
+      
+      // Bell
+      ctx.fillStyle = `hsla(${c.hue}, 70%, 60%, ${glowOpacity})`
+      ctx.beginPath()
+      ctx.ellipse(c.x, c.y, c.size * 0.8, c.size * 0.5, 0, Math.PI, 0)
+      ctx.fill()
+      
+      // Tentacles
+      for (let t = 0; t < c.tentacles; t++) {
+        const tx = c.x + (t - c.tentacles / 2 + 0.5) * (c.size * 0.3)
+        const wave = Math.sin(c.pulsePhase + t * 0.5) * 10
+        
+        ctx.strokeStyle = `hsla(${c.hue}, 60%, 50%, ${glowOpacity * 0.6})`
+        ctx.lineWidth = 1.5
+        ctx.beginPath()
+        ctx.moveTo(tx, c.y + c.size * 0.3)
+        ctx.quadraticCurveTo(tx + wave, c.y + c.size, tx + wave * 0.5, c.y + c.size * 1.5)
+        ctx.stroke()
+      }
+    } else if (c.type === 'angler') {
+      // Angler fish with lure
+      const lureGlow = ctx.createRadialGradient(c.x, c.y - c.size, 0, c.x, c.y - c.size, c.size * 0.8)
+      lureGlow.addColorStop(0, `hsla(${c.hue}, 100%, 70%, ${glowOpacity})`)
+      lureGlow.addColorStop(0.5, `hsla(${c.hue}, 90%, 50%, ${glowOpacity * 0.4})`)
+      lureGlow.addColorStop(1, `hsla(${c.hue}, 80%, 40%, 0)`)
+      
+      ctx.fillStyle = lureGlow
+      ctx.beginPath()
+      ctx.arc(c.x, c.y - c.size, c.size * 0.8, 0, Math.PI * 2)
+      ctx.fill()
+      
+      // Lure core
+      ctx.fillStyle = `hsla(${c.hue}, 100%, 80%, ${glowOpacity})`
+      ctx.beginPath()
+      ctx.arc(c.x, c.y - c.size, c.size * 0.15, 0, Math.PI * 2)
+      ctx.fill()
+    } else {
+      // Simple glowing fish
+      const fishGlow = ctx.createRadialGradient(c.x, c.y, 0, c.x, c.y, c.size)
+      fishGlow.addColorStop(0, `hsla(${c.hue}, 80%, 60%, ${glowOpacity * 0.6})`)
+      fishGlow.addColorStop(1, `hsla(${c.hue}, 70%, 50%, 0)`)
+      
+      ctx.fillStyle = fishGlow
+      ctx.beginPath()
+      ctx.arc(c.x, c.y, c.size, 0, Math.PI * 2)
+      ctx.fill()
+      
+      ctx.fillStyle = `hsla(${c.hue}, 70%, 55%, ${glowOpacity})`
+      ctx.beginPath()
+      ctx.ellipse(c.x, c.y, c.size * 0.6, c.size * 0.3, 0, 0, Math.PI * 2)
+      ctx.fill()
+    }
+  })
+}
+
+// ============ Environment: Rain Effect ============
+
+interface Raindrop {
+  x: number
+  y: number
+  speed: number
+  length: number
+  opacity: number
+}
+
+interface RainStreak {
+  x: number
+  y: number
+  length: number
+  speed: number
+  width: number
+}
+
+interface CityLight {
+  x: number
+  y: number
+  size: number
+  hue: number
+  flicker: number
+  flickerSpeed: number
+}
+
+function createRaindrop(width: number, height: number): Raindrop {
+  return {
+    x: Math.random() * width * 1.2 - width * 0.1,
+    y: Math.random() * height - height,
+    speed: 8 + Math.random() * 12,
+    length: 15 + Math.random() * 25,
+    opacity: 0.2 + Math.random() * 0.4,
+  }
+}
+
+function createRainStreak(width: number, height: number): RainStreak {
+  return {
+    x: Math.random() * width,
+    y: Math.random() * height * 0.6, // Window streaks in upper portion
+    length: 30 + Math.random() * 100,
+    speed: 0.3 + Math.random() * 0.5,
+    width: 1 + Math.random() * 2,
+  }
+}
+
+function createCityLight(width: number, height: number): CityLight {
+  const hueOptions = [45, 30, 200, 280, 0] // Warm, orange, blue, purple, red
+  return {
+    x: Math.random() * width,
+    y: height * 0.65 + Math.random() * height * 0.35,
+    size: 3 + Math.random() * 8,
+    hue: hueOptions[Math.floor(Math.random() * hueOptions.length)] + (Math.random() - 0.5) * 20,
+    flicker: Math.random() * Math.PI * 2,
+    flickerSpeed: 0.05 + Math.random() * 0.1,
+  }
+}
+
+function drawRain(
+  ctx: CanvasRenderingContext2D,
+  state: any,
+  width: number,
+  height: number,
+  time: number,
+  intensity: number
+): void {
+  const { drops, streaks, cityLights, lightning } = state
+  
+  // Dark stormy gradient
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, height)
+  bgGrad.addColorStop(0, `hsla(220, 30%, 8%, ${intensity * 0.5})`)
+  bgGrad.addColorStop(0.5, `hsla(230, 25%, 6%, ${intensity * 0.4})`)
+  bgGrad.addColorStop(1, `hsla(240, 20%, 4%, ${intensity * 0.3})`)
+  ctx.fillStyle = bgGrad
+  ctx.fillRect(0, 0, width, height)
+  
+  // Lightning flash
+  lightning.timer--
+  if (lightning.timer <= 0 && !lightning.active && Math.random() < 0.3) {
+    lightning.active = true
+    lightning.opacity = 0.8 + Math.random() * 0.2
+  }
+  
+  if (lightning.active) {
+    ctx.fillStyle = `hsla(240, 30%, 95%, ${lightning.opacity * intensity})`
+    ctx.fillRect(0, 0, width, height)
+    lightning.opacity -= 0.15
+    if (lightning.opacity <= 0) {
+      lightning.active = false
+      lightning.timer = 300 + Math.random() * 700
+    }
+  }
+  
+  // Blurred city lights in background
+  cityLights.forEach((light: CityLight) => {
+    light.flicker += light.flickerSpeed
+    const flicker = Math.sin(light.flicker) * 0.2 + 0.8
+    const currentOpacity = flicker * intensity * 0.4
+    
+    // Blurred glow (like through rain-covered glass)
+    const glowSize = light.size * 4
+    const glowGrad = ctx.createRadialGradient(light.x, light.y, 0, light.x, light.y, glowSize)
+    glowGrad.addColorStop(0, `hsla(${light.hue}, 70%, 60%, ${currentOpacity})`)
+    glowGrad.addColorStop(0.3, `hsla(${light.hue}, 60%, 50%, ${currentOpacity * 0.5})`)
+    glowGrad.addColorStop(1, `hsla(${light.hue}, 50%, 40%, 0)`)
+    
+    ctx.fillStyle = glowGrad
+    ctx.beginPath()
+    ctx.arc(light.x, light.y, glowSize, 0, Math.PI * 2)
+    ctx.fill()
+  })
+  
+  // Rain streaks on window
+  streaks.forEach((streak: RainStreak) => {
+    streak.y += streak.speed
+    
+    if (streak.y > height * 0.7) {
+      streak.y = Math.random() * height * 0.3
+      streak.x = Math.random() * width
+    }
+    
+    const streakGrad = ctx.createLinearGradient(streak.x, streak.y, streak.x, streak.y + streak.length)
+    streakGrad.addColorStop(0, `hsla(200, 30%, 80%, ${0.1 * intensity})`)
+    streakGrad.addColorStop(0.5, `hsla(200, 30%, 70%, ${0.2 * intensity})`)
+    streakGrad.addColorStop(1, `hsla(200, 30%, 60%, ${0.05 * intensity})`)
+    
+    ctx.strokeStyle = streakGrad
+    ctx.lineWidth = streak.width
+    ctx.lineCap = 'round'
+    ctx.beginPath()
+    ctx.moveTo(streak.x, streak.y)
+    ctx.lineTo(streak.x + 2, streak.y + streak.length)
+    ctx.stroke()
+  })
+  
+  // Falling rain
+  drops.forEach((drop: Raindrop) => {
+    drop.y += drop.speed
+    drop.x += 1 // Slight wind
+    
+    if (drop.y > height) {
+      drop.y = -drop.length
+      drop.x = Math.random() * width * 1.2 - width * 0.1
+    }
+    
+    const dropGrad = ctx.createLinearGradient(drop.x, drop.y, drop.x, drop.y + drop.length)
+    dropGrad.addColorStop(0, `hsla(210, 40%, 80%, 0)`)
+    dropGrad.addColorStop(0.3, `hsla(210, 40%, 80%, ${drop.opacity * intensity})`)
+    dropGrad.addColorStop(1, `hsla(210, 40%, 70%, ${drop.opacity * intensity * 0.5})`)
+    
+    ctx.strokeStyle = dropGrad
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    ctx.moveTo(drop.x, drop.y)
+    ctx.lineTo(drop.x + 2, drop.y + drop.length)
+    ctx.stroke()
+  })
+  
+  // Window condensation effect (subtle)
+  const condensation = ctx.createRadialGradient(
+    width / 2, height / 2, 0,
+    width / 2, height / 2, Math.max(width, height) * 0.7
+  )
+  condensation.addColorStop(0, `hsla(200, 20%, 50%, 0)`)
+  condensation.addColorStop(0.7, `hsla(200, 20%, 40%, ${intensity * 0.03})`)
+  condensation.addColorStop(1, `hsla(200, 20%, 30%, ${intensity * 0.08})`)
+  ctx.fillStyle = condensation
+  ctx.fillRect(0, 0, width, height)
 }
