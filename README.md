@@ -2,7 +2,7 @@
 
 A typing practice app designed for technical professionals who need to unlearn bad habits and build proper muscle memory. No gates, no pressure, no progression locks.
 
-**[Try it live →](https://typing-course.vercel.app)**
+**[Try it live →](https://typing-course-pi.vercel.app)**
 
 ## Philosophy
 
@@ -87,7 +87,7 @@ npm run dev
 Open [http://localhost:3000](http://localhost:3000)
 
 ### Or use the hosted version
-Visit **[typing-course.vercel.app](https://typing-course.vercel.app)**
+Visit **[typing-course.vercel.app](https://typing-course-pi.vercel.app)**
 
 ---
 
