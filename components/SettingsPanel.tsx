@@ -23,8 +23,7 @@ const SOUND_PROFILES = [
 const AMBIANCE_STYLES = [
   { id: 'none', name: 'None' },
   { id: 'particles', name: 'Particles' },
-  { id: 'gradient', name: 'Gradient' },
-  { id: 'both', name: 'Both' },
+  { id: 'both', name: 'Particles + Glow' },
 ] as const
 
 export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {

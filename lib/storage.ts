@@ -22,7 +22,7 @@ export interface TypingSession {
 
 export type FingerGuideMode = 'hands' | 'text' | 'keyboard'
 export type KeyboardSoundProfile = 'mxBrown' | 'mxBlue' | 'thocky' | 'typewriter' | 'bubble' | 'minimal' | 'none'
-export type AmbianceStyle = 'none' | 'particles' | 'gradient' | 'both'
+export type AmbianceStyle = 'none' | 'particles' | 'both'
 
 export interface UserSettings {
   showFingerGuide: boolean

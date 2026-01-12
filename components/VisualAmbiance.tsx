@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 
-export type AmbianceStyle = 'none' | 'particles' | 'gradient' | 'both'
+export type AmbianceStyle = 'none' | 'particles' | 'both'
 
 interface VisualAmbianceProps {
   style: AmbianceStyle
@@ -42,8 +42,8 @@ export default function VisualAmbiance({ style, intensity = 0.5 }: VisualAmbianc
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height)
       
-      // Draw gradient background
-      if (style === 'gradient' || style === 'both') {
+      // Draw gradient background (only with particles in 'both' mode)
+      if (style === 'both') {
         drawGradient(ctx, canvas, gradientPhaseRef.current, intensity)
         gradientPhaseRef.current += 0.002 * intensity
       }
