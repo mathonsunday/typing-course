@@ -194,6 +194,20 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
     }
   }, [isComplete, resetSession, onReset, currentIndex])
   
+  // Dead key characters on Mac that should be ignored (they combine with the next key)
+  const DEAD_KEY_CHARS = new Set([
+    '´', // Option+e (acute accent)
+    '˜', // Option+n (tilde)
+    '¨', // Option+u (dieresis/umlaut)
+    'ˆ', // Option+i (circumflex)
+    '`', // Option+` (grave accent) - careful, this is also a regular character
+    '\u0301', // Combining acute accent
+    '\u0303', // Combining tilde
+    '\u0308', // Combining dieresis
+    '\u0302', // Combining circumflex
+    '\u0300', // Combining grave
+  ])
+  
   // Handle actual character input (supports dead keys / accent composition)
   const handleInput = useCallback(async (e: React.FormEvent<HTMLInputElement>) => {
     const input = e.currentTarget
@@ -204,6 +218,9 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
     
     // Ignore if no character or multiple characters somehow
     if (!typedChar || typedChar.length !== 1) return
+    
+    // Skip dead key characters - wait for the composed result
+    if (DEAD_KEY_CHARS.has(typedChar)) return
     
     if (isComplete) return
     
