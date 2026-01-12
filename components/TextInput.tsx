@@ -9,44 +9,67 @@ interface TextInputProps {
 }
 
 // Sample texts for quick start
-// Each text is designed to include ALL evaluation characters:
-// - All 26 letters (a-z)
-// - Numbers (0-9)
-// - Punctuation: . , ; : ' " ! ? - ( )
-// Minimum ~120 words for reliable WPM measurement
+// evaluationReady: true means text has all required characters for graduation
+// evaluationReady: false means practice-only (missing some characters)
 
-const SAMPLE_TEXTS = [
+interface SampleText {
+  title: string
+  text: string
+  evaluationReady: boolean
+  language?: 'en' | 'es'
+  source?: string
+}
+
+const SAMPLE_TEXTS: SampleText[] = [
+  // === EVALUATION-READY (English) ===
   {
     title: 'Wizard Problems',
+    evaluationReady: true,
     text: `"Excuse me," said the wizard, adjusting his 47 scarves, "but your dragon just ate my homework." The dragon burped; 3 pages of calculus floated out. "That's only 12% of it!" Professor Quirx was furious - his beard (6 feet long) quivered with rage. "I've been teaching for 890 years, and this is the 5th time today!" The wizard shrugged. "Can't you just... un-eat it?" The dragon looked offended. "I don't do refunds," it grumbled. Somewhere, a clock struck 13:00. Nobody questioned it.`,
   },
   {
     title: 'Suspicious Cats',
+    evaluationReady: true,
     text: `My cat has been acting weird lately. Yesterday at 4:30 AM, I caught him reading the newspaper (business section). "What?" he said - yes, SAID. "I'm checking my investments." Turns out he's been day-trading since 2019; his portfolio is up 340%. "You could've told me," I muttered. He just licked his paw. "You wouldn't understand. You still use a savings account." The audacity! I've been feeding this judgmental creature for 7 years. "By the way," he added, "we're out of the fancy tuna. The $28 kind." Unbelievable.`,
   },
   {
     title: 'Time Travel Oops',
+    evaluationReady: true,
     text: `So I accidentally invented time travel (don't ask). First trip: 1847. Immediately stepped on a butterfly. "That's probably fine," I thought - wrong! Came back to find everyone speaks in rhymes now. Second attempt: jumped to 2089. Robots have feelings; one cried when I bumped into him. "Watch it!" he sobbed. Third try: ended up at my own birth (awkward). My mom looked at baby-me and said, "This one's gonna cause problems." She wasn't wrong. Currently stuck in 1963; the WiFi here is terrible. Send help?`,
   },
   {
     title: 'Ghost Roommate',
+    evaluationReady: true,
     text: `Living with a ghost isn't bad - mostly. Gerald (died 1847) pays rent on time: $0, but he does the dishes. "Fair exchange," he says, floating through walls at 3 AM. The issues? He keeps rearranging furniture "to improve energy flow." My couch has moved 12 times this month! Also, he's brutally honest. "That outfit? 2 out of 10." Thanks, Gerald. Yesterday he invited 50 ghost friends over. "It's a seance," he explained. "You're not invited; it's rude to bring the living." I ordered pizza anyway. They judged me silently.`,
   },
   {
     title: 'Pokemon Fanfic',
+    evaluationReady: true,
     text: `"Pikachu, I need you to file my taxes," Ash whispered at 2:47 AM. The electric mouse stared back, exhausted. "Pika?" Ash had been a trainer for 26 years now - still 10 years old (don't ask). His Pokedex showed 897 Pokemon caught; his bank account showed $3.50. "We've beaten every gym," he muttered, "but I can't afford rent." Brock called yesterday: "I'm a doctor now. Real job." Misty? "Marine biologist. Great benefits!" Meanwhile, Ash was sleeping in tall grass, hoping for rare encounters. "This is fine," he said. Pikachu disagreed.`,
   },
   {
     title: 'Niche Video Games',
+    evaluationReady: true,
     text: `"Spreadsheet Simulator 2024" just dropped - finally! You play as an accountant (named Greg) who must balance 87 quarterly reports before 5:00 PM. Critics are calling it "aggressively boring" and "why does this exist?" I've logged 340 hours. The sequel, "Tax Form Turbo," adds a romance subplot; you can date the fax machine. My favorite? "Waiting Room Extreme" - you sit in a DMV for 6 real-time hours. No saves. One bathroom break allowed. "Is this even a game?" asked my friend. "It's art," I replied, adjusting my ergonomic chair. He left.`,
   },
   {
     title: 'Yo-Yo Extremists',
+    evaluationReady: true,
     text: `"You're holding it wrong." Derek's eye twitched. He'd been yo-yoing for 23 years; this kid was maybe 14. "I've won 7 national championships," Derek hissed. "That's a basic sleeper - everyone knows you need 38 degrees of wrist tilt!" The judges exchanged looks. "Sir, this is a children's competition." Derek didn't care. His custom yo-yo (titanium core, hand-carved, $2,500) spun at exactly 4,890 RPM. "Amateurs," he muttered. His wife had left him; his kids didn't call. But when that yo-yo hit a perfect "around the world?" Worth it. Probably.`,
   },
   {
     title: 'Birds of Latin America',
+    evaluationReady: true,
     text: `The Quetzal doesn't care about your problems. With its 26-inch tail feathers (excessive, honestly) and "I'm better than you" attitude, it just sits there, being gorgeous. Meanwhile, the Horned Screamer - yes, that's real - looks like a turkey had an existential crisis. "Why am I called this?" it probably wonders at 4:30 AM while screaming. The Jabiru stork stands 5 feet tall; its name means "swollen neck" (rude). And the Oilbird? Lives in caves, eats fruit, navigates by echolocation. Scientists asked: "But why?" The Oilbird offered no comment.`,
+  },
+  
+  // === PRACTICE ONLY (Spanish) ===
+  {
+    title: 'Don Quijote',
+    evaluationReady: false,
+    language: 'es',
+    source: 'Miguel de Cervantes, 1605',
+    text: `En un lugar de la Mancha, de cuyo nombre no quiero acordarme, no ha mucho tiempo que vivía un hidalgo de los de lanza en astillero, adarga antigua, rocín flaco y galgo corredor. Una olla de algo más vaca que carnero, salpicón las más noches, duelos y quebrantos los sábados, lantejas los viernes, algún palomino de añadidura los domingos, consumían las tres partes de su hacienda.`,
   },
 ]
 
@@ -106,16 +129,16 @@ export default function TextInput({ onSubmit, currentText }: TextInputProps) {
           Choose your practice text
         </h2>
         
-        {/* Sample texts */}
+        {/* Sample texts - Evaluation Ready */}
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-3">
-            <p className="text-sm text-zinc-500">Quick start with a sample</p>
+            <p className="text-sm text-zinc-500">Evaluation-ready</p>
             <span className="text-xs px-2 py-0.5 bg-green-900/30 text-green-400 rounded">
-              ✓ All evaluation-ready
+              ✓ Counts toward graduation
             </span>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            {SAMPLE_TEXTS.map((sample) => (
+            {SAMPLE_TEXTS.filter(s => s.evaluationReady).map((sample) => (
               <button
                 key={sample.title}
                 onClick={() => handleSampleSelect(sample.text)}
@@ -124,6 +147,42 @@ export default function TextInput({ onSubmit, currentText }: TextInputProps) {
                 <div className="text-sm font-medium text-zinc-300 mb-1">
                   {sample.title}
                 </div>
+                <div className="text-xs text-zinc-500 line-clamp-2">
+                  {sample.text.slice(0, 80)}...
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+        
+        {/* Sample texts - Practice Only */}
+        <div className="mb-6">
+          <div className="flex items-center gap-2 mb-3">
+            <p className="text-sm text-zinc-500">Practice only</p>
+            <span className="text-xs px-2 py-0.5 bg-amber-900/30 text-amber-400 rounded">
+              Good practice, doesn't count for graduation
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {SAMPLE_TEXTS.filter(s => !s.evaluationReady).map((sample) => (
+              <button
+                key={sample.title}
+                onClick={() => handleSampleSelect(sample.text)}
+                className="text-left p-3 bg-surface rounded-lg border border-zinc-800 hover:border-zinc-600 transition-colors"
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-sm font-medium text-zinc-300">
+                    {sample.title}
+                  </span>
+                  {sample.language === 'es' && (
+                    <span className="text-xs px-1.5 py-0.5 bg-zinc-800 text-zinc-400 rounded">
+                      ES
+                    </span>
+                  )}
+                </div>
+                {sample.source && (
+                  <div className="text-xs text-zinc-600 mb-1">{sample.source}</div>
+                )}
                 <div className="text-xs text-zinc-500 line-clamp-2">
                   {sample.text.slice(0, 80)}...
                 </div>
