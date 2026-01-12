@@ -17,12 +17,13 @@ interface TypingAreaProps {
   text: string
   onComplete?: () => void
   onReset?: () => void
+  onDone?: () => void // Called when user clicks "Done for Now" after assessment
 }
 
 // Number of lines to show at once
 const VISIBLE_LINES = 3
 
-export default function TypingArea({ text, onComplete, onReset }: TypingAreaProps) {
+export default function TypingArea({ text, onComplete, onReset, onDone }: TypingAreaProps) {
   const [settings] = useAtom(settingsAtom)
   const saveSession = useSetAtom(saveSessionAtom)
   
@@ -31,6 +32,7 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
   const [errors, setErrors] = useState<Set<number>>(new Set())
   const [startTime, setStartTime] = useState<number | null>(null)
   const [isComplete, setIsComplete] = useState(false)
+  const [hasAssessed, setHasAssessed] = useState(false)
   const [currentWPM, setCurrentWPM] = useState(0)
   const [elapsedMs, setElapsedMs] = useState(0)
   const [lastKeystrokeTime, setLastKeystrokeTime] = useState<number | null>(null)
@@ -122,6 +124,8 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
     setErrors(new Set())
     setStartTime(null)
     setIsComplete(false)
+    setHasAssessed(false)
+    setIsPaused(false)
     setCurrentWPM(0)
     setElapsedMs(0)
     setLastKeystrokeTime(null)
@@ -533,11 +537,37 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
       )}
       
       {/* Post-session reflection */}
-      {isComplete && (
+      {isComplete && !hasAssessed && (
         <div className="mt-6 space-y-4">
           <WPMContext wpm={currentWPM} />
-          <SelfAssessment />
-          <GraduationProgress variant="compact" />
+          <SelfAssessment onAssessment={() => setHasAssessed(true)} />
+        </div>
+      )}
+      
+      {/* Post-assessment: show progress and clear next action */}
+      {isComplete && hasAssessed && (
+        <div className="mt-6 space-y-4">
+          <GraduationProgress />
+          <div className="flex justify-center gap-4">
+            <button
+              onClick={() => {
+                resetSession()
+                onReset?.()
+              }}
+              className="px-6 py-3 bg-surface-raised hover:bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 transition-colors"
+            >
+              Practice Again
+            </button>
+            <button
+              onClick={() => {
+                resetSession()
+                onDone?.()
+              }}
+              className="px-6 py-3 bg-accent hover:bg-accent-muted rounded-lg text-white font-medium transition-colors"
+            >
+              Done for Now
+            </button>
+          </div>
         </div>
       )}
     </div>

@@ -70,6 +70,10 @@ function TypingApp() {
             onReset={() => {
               // Restart with same text
             }}
+            onDone={() => {
+              // Go back to text selection / home
+              setPracticeText(null)
+            }}
           />
         )}
         
