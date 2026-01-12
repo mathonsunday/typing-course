@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 
-export type AmbianceStyle = 'none' | 'geometric' | 'fireflies' | 'nebula'
+export type AmbianceStyle = 'none' | 'geometric' | 'fireflies' | 'nebula' | 'eyes' | 'shadowcat' | 'watcher' | 'shadows'
 
 interface VisualAmbianceProps {
   style: AmbianceStyle
@@ -53,6 +53,18 @@ export default function VisualAmbiance({ style, intensity = 0.5 }: VisualAmbianc
           break
         case 'nebula':
           drawNebula(ctx, stateRef.current, width, height, timeRef.current, intensity)
+          break
+        case 'eyes':
+          drawEyes(ctx, stateRef.current, width, height, timeRef.current, intensity)
+          break
+        case 'shadowcat':
+          drawShadowCat(ctx, stateRef.current, width, height, timeRef.current, intensity)
+          break
+        case 'watcher':
+          drawWatcher(ctx, stateRef.current, width, height, timeRef.current, intensity)
+          break
+        case 'shadows':
+          drawShadows(ctx, stateRef.current, width, height, timeRef.current, intensity)
           break
       }
       
@@ -107,6 +119,32 @@ function initializeState(
       stateRef.current = {
         clouds: Array.from({ length: 6 }, (_, i) => createCloud(width, height, i)),
         stars: Array.from({ length: Math.floor(100 * intensity) + 50 }, () => createStar(width, height)),
+      }
+      break
+      
+    case 'eyes':
+      stateRef.current = {
+        eyePairs: Array.from({ length: Math.floor(3 + intensity * 4) }, () => createEyePair(width, height)),
+      }
+      break
+      
+    case 'shadowcat':
+      stateRef.current = {
+        cat: createShadowCatState(width, height),
+      }
+      break
+      
+    case 'watcher':
+      stateRef.current = {
+        watcher: createWatcherState(width, height),
+        glimpses: [],
+      }
+      break
+      
+    case 'shadows':
+      stateRef.current = {
+        shadowTendrils: Array.from({ length: 6 }, () => createShadowTendril(width, height)),
+        shadowPools: Array.from({ length: 4 }, () => createShadowPool(width, height)),
       }
       break
   }
@@ -532,4 +570,696 @@ function drawNebula(
   
   ctx.fillStyle = vignette
   ctx.fillRect(0, 0, width, height)
+}
+
+// ============ Spooky: Eyes Effect ============
+
+interface EyePair {
+  x: number
+  y: number
+  targetX: number
+  targetY: number
+  size: number
+  spacing: number
+  blinkPhase: number
+  blinkSpeed: number
+  nextBlink: number
+  isBlinking: boolean
+  blinkProgress: number
+  lookAngle: number
+  lookTargetAngle: number
+  opacity: number
+  fadeDirection: number
+  hue: number // For slight color variation
+  driftPhase: number
+  driftSpeed: number
+}
+
+function createEyePair(width: number, height: number): EyePair {
+  // Position eyes in peripheral areas (edges of screen)
+  const edge = Math.floor(Math.random() * 4)
+  let x, y
+  const margin = 100
+  
+  switch (edge) {
+    case 0: // Top
+      x = margin + Math.random() * (width - margin * 2)
+      y = margin + Math.random() * 80
+      break
+    case 1: // Bottom
+      x = margin + Math.random() * (width - margin * 2)
+      y = height - margin - Math.random() * 80
+      break
+    case 2: // Left
+      x = margin + Math.random() * 80
+      y = margin + Math.random() * (height - margin * 2)
+      break
+    default: // Right
+      x = width - margin - Math.random() * 80
+      y = margin + Math.random() * (height - margin * 2)
+      break
+  }
+  
+  return {
+    x, y,
+    targetX: x,
+    targetY: y,
+    size: 8 + Math.random() * 6,
+    spacing: 20 + Math.random() * 15,
+    blinkPhase: Math.random() * Math.PI * 2,
+    blinkSpeed: 0.3 + Math.random() * 0.3,
+    nextBlink: Math.random() * 200 + 100,
+    isBlinking: false,
+    blinkProgress: 0,
+    lookAngle: Math.random() * Math.PI * 2,
+    lookTargetAngle: Math.random() * Math.PI * 2,
+    opacity: 0,
+    fadeDirection: 1,
+    hue: Math.random() < 0.7 ? 45 : (Math.random() < 0.5 ? 0 : 120), // Yellow, red, or green
+    driftPhase: Math.random() * Math.PI * 2,
+    driftSpeed: 0.1 + Math.random() * 0.15,
+  }
+}
+
+function drawEyes(
+  ctx: CanvasRenderingContext2D,
+  state: any,
+  width: number,
+  height: number,
+  time: number,
+  intensity: number
+): void {
+  const { eyePairs } = state
+  
+  eyePairs.forEach((pair: EyePair) => {
+    // Fade in/out logic
+    if (pair.fadeDirection > 0) {
+      pair.opacity = Math.min(1, pair.opacity + 0.003)
+      if (pair.opacity >= 1 && Math.random() < 0.001) {
+        pair.fadeDirection = -1
+      }
+    } else {
+      pair.opacity = Math.max(0, pair.opacity - 0.005)
+      if (pair.opacity <= 0) {
+        // Reposition when fully faded
+        Object.assign(pair, createEyePair(width, height))
+        pair.opacity = 0
+        pair.fadeDirection = 1
+      }
+    }
+    
+    // Slow drift
+    pair.driftPhase += pair.driftSpeed * 0.01
+    const driftX = Math.sin(pair.driftPhase) * 15
+    const driftY = Math.cos(pair.driftPhase * 0.7) * 10
+    pair.x = pair.targetX + driftX
+    pair.y = pair.targetY + driftY
+    
+    // Blink logic
+    pair.nextBlink--
+    if (pair.nextBlink <= 0 && !pair.isBlinking) {
+      pair.isBlinking = true
+      pair.blinkProgress = 0
+    }
+    
+    if (pair.isBlinking) {
+      pair.blinkProgress += 0.08
+      if (pair.blinkProgress >= 1) {
+        pair.isBlinking = false
+        pair.nextBlink = Math.random() * 300 + 150
+      }
+    }
+    
+    // Slowly change look direction
+    if (Math.random() < 0.005) {
+      pair.lookTargetAngle = Math.random() * Math.PI * 2
+    }
+    pair.lookAngle += (pair.lookTargetAngle - pair.lookAngle) * 0.02
+    
+    const blinkAmount = pair.isBlinking 
+      ? Math.sin(pair.blinkProgress * Math.PI) 
+      : 0
+    
+    const eyeOpenness = 1 - blinkAmount * 0.9
+    const currentOpacity = pair.opacity * intensity * 0.6
+    
+    if (currentOpacity < 0.01) return
+    
+    // Draw each eye
+    for (let i = -1; i <= 1; i += 2) {
+      const eyeX = pair.x + i * pair.spacing / 2
+      const eyeY = pair.y
+      
+      // Outer glow
+      const glowSize = pair.size * 3
+      const glowGradient = ctx.createRadialGradient(eyeX, eyeY, 0, eyeX, eyeY, glowSize)
+      glowGradient.addColorStop(0, `hsla(${pair.hue}, 80%, 50%, ${currentOpacity * 0.3})`)
+      glowGradient.addColorStop(0.5, `hsla(${pair.hue}, 70%, 40%, ${currentOpacity * 0.1})`)
+      glowGradient.addColorStop(1, `hsla(${pair.hue}, 60%, 30%, 0)`)
+      
+      ctx.fillStyle = glowGradient
+      ctx.beginPath()
+      ctx.arc(eyeX, eyeY, glowSize, 0, Math.PI * 2)
+      ctx.fill()
+      
+      // Eye shape (ellipse that closes when blinking)
+      ctx.save()
+      ctx.translate(eyeX, eyeY)
+      ctx.scale(1, eyeOpenness)
+      
+      // Eye white/sclera (dark, barely visible)
+      ctx.fillStyle = `hsla(${pair.hue}, 20%, 15%, ${currentOpacity * 0.5})`
+      ctx.beginPath()
+      ctx.ellipse(0, 0, pair.size, pair.size * 0.6, 0, 0, Math.PI * 2)
+      ctx.fill()
+      
+      // Iris
+      const irisSize = pair.size * 0.7
+      const pupilOffset = pair.size * 0.15
+      const irisX = Math.cos(pair.lookAngle) * pupilOffset
+      const irisY = Math.sin(pair.lookAngle) * pupilOffset
+      
+      ctx.fillStyle = `hsla(${pair.hue}, 70%, 45%, ${currentOpacity})`
+      ctx.beginPath()
+      ctx.arc(irisX, irisY, irisSize, 0, Math.PI * 2)
+      ctx.fill()
+      
+      // Pupil
+      ctx.fillStyle = `hsla(0, 0%, 0%, ${currentOpacity})`
+      ctx.beginPath()
+      ctx.arc(irisX, irisY, irisSize * 0.5, 0, Math.PI * 2)
+      ctx.fill()
+      
+      // Glint
+      ctx.fillStyle = `hsla(0, 0%, 100%, ${currentOpacity * 0.7})`
+      ctx.beginPath()
+      ctx.arc(irisX - irisSize * 0.2, irisY - irisSize * 0.2, irisSize * 0.15, 0, Math.PI * 2)
+      ctx.fill()
+      
+      ctx.restore()
+    }
+  })
+}
+
+// ============ Spooky: Shadow Cat Effect ============
+
+interface ShadowCatState {
+  x: number
+  y: number
+  targetX: number
+  targetY: number
+  scale: number
+  opacity: number
+  eyeGlow: number
+  eyePhase: number
+  tailPhase: number
+  earTwitch: number
+  lookAngle: number
+  state: 'sitting' | 'moving' | 'fading'
+  stateTimer: number
+  corner: number
+}
+
+function createShadowCatState(width: number, height: number): ShadowCatState {
+  const corner = Math.floor(Math.random() * 4)
+  const margin = 120
+  let x, y
+  
+  switch (corner) {
+    case 0: x = margin; y = margin; break
+    case 1: x = width - margin; y = margin; break
+    case 2: x = margin; y = height - margin; break
+    default: x = width - margin; y = height - margin; break
+  }
+  
+  return {
+    x, y,
+    targetX: x,
+    targetY: y,
+    scale: 0.8 + Math.random() * 0.4,
+    opacity: 0,
+    eyeGlow: 0.5,
+    eyePhase: 0,
+    tailPhase: 0,
+    earTwitch: 0,
+    lookAngle: Math.PI / 2,
+    state: 'fading',
+    stateTimer: 50,
+    corner,
+  }
+}
+
+function drawShadowCat(
+  ctx: CanvasRenderingContext2D,
+  state: any,
+  width: number,
+  height: number,
+  time: number,
+  intensity: number
+): void {
+  const cat = state.cat as ShadowCatState
+  
+  // State machine
+  cat.stateTimer--
+  
+  if (cat.state === 'fading' && cat.stateTimer <= 0) {
+    cat.state = 'sitting'
+    cat.stateTimer = 500 + Math.random() * 500
+  } else if (cat.state === 'sitting' && cat.stateTimer <= 0) {
+    if (Math.random() < 0.3) {
+      cat.state = 'moving'
+      cat.corner = (cat.corner + 1 + Math.floor(Math.random() * 3)) % 4
+      const margin = 120
+      switch (cat.corner) {
+        case 0: cat.targetX = margin; cat.targetY = margin; break
+        case 1: cat.targetX = width - margin; cat.targetY = margin; break
+        case 2: cat.targetX = margin; cat.targetY = height - margin; break
+        default: cat.targetX = width - margin; cat.targetY = height - margin; break
+      }
+      cat.stateTimer = 200
+    } else {
+      cat.stateTimer = 300 + Math.random() * 400
+    }
+  } else if (cat.state === 'moving') {
+    cat.x += (cat.targetX - cat.x) * 0.02
+    cat.y += (cat.targetY - cat.y) * 0.02
+    
+    if (Math.abs(cat.x - cat.targetX) < 5 && Math.abs(cat.y - cat.targetY) < 5) {
+      cat.state = 'sitting'
+      cat.stateTimer = 400 + Math.random() * 400
+    }
+  }
+  
+  // Fade in/out
+  const targetOpacity = cat.state === 'fading' ? 0 : 1
+  cat.opacity += (targetOpacity - cat.opacity) * 0.02
+  
+  // Animate
+  cat.eyePhase += 0.03
+  cat.tailPhase += 0.02
+  cat.eyeGlow = 0.5 + Math.sin(cat.eyePhase) * 0.3
+  
+  // Occasional ear twitch
+  if (Math.random() < 0.005) cat.earTwitch = 1
+  cat.earTwitch *= 0.9
+  
+  // Look toward center of screen
+  const centerX = width / 2
+  const centerY = height / 2
+  const targetLookAngle = Math.atan2(centerY - cat.y, centerX - cat.x)
+  cat.lookAngle += (targetLookAngle - cat.lookAngle) * 0.01
+  
+  const opacity = cat.opacity * intensity * 0.4
+  if (opacity < 0.01) return
+  
+  const s = cat.scale * 60
+  
+  ctx.save()
+  ctx.translate(cat.x, cat.y)
+  
+  // Body silhouette (sitting cat shape)
+  ctx.fillStyle = `hsla(260, 20%, 5%, ${opacity})`
+  
+  // Body
+  ctx.beginPath()
+  ctx.ellipse(0, s * 0.2, s * 0.5, s * 0.4, 0, 0, Math.PI * 2)
+  ctx.fill()
+  
+  // Head
+  ctx.beginPath()
+  ctx.arc(0, -s * 0.3, s * 0.35, 0, Math.PI * 2)
+  ctx.fill()
+  
+  // Ears
+  const earTwitch = cat.earTwitch * 0.1
+  ctx.beginPath()
+  ctx.moveTo(-s * 0.25, -s * 0.5)
+  ctx.lineTo(-s * 0.35 - earTwitch * s, -s * 0.85)
+  ctx.lineTo(-s * 0.1, -s * 0.55)
+  ctx.fill()
+  
+  ctx.beginPath()
+  ctx.moveTo(s * 0.25, -s * 0.5)
+  ctx.lineTo(s * 0.35 + earTwitch * s, -s * 0.85)
+  ctx.lineTo(s * 0.1, -s * 0.55)
+  ctx.fill()
+  
+  // Tail
+  const tailWave = Math.sin(cat.tailPhase) * 0.2
+  ctx.beginPath()
+  ctx.moveTo(s * 0.4, s * 0.3)
+  ctx.quadraticCurveTo(
+    s * 0.8 + tailWave * s, s * 0.1,
+    s * 0.9, -s * 0.2 + tailWave * s * 0.5
+  )
+  ctx.lineWidth = s * 0.12
+  ctx.strokeStyle = `hsla(260, 20%, 5%, ${opacity})`
+  ctx.lineCap = 'round'
+  ctx.stroke()
+  
+  // Eyes
+  const eyeSpacing = s * 0.18
+  const eyeY = -s * 0.32
+  const pupilOffset = s * 0.03
+  const lookX = Math.cos(cat.lookAngle) * pupilOffset
+  const lookY = Math.sin(cat.lookAngle) * pupilOffset
+  
+  for (let i = -1; i <= 1; i += 2) {
+    const eyeX = i * eyeSpacing
+    
+    // Eye glow
+    const glowSize = s * 0.2
+    const glowGradient = ctx.createRadialGradient(eyeX, eyeY, 0, eyeX, eyeY, glowSize)
+    glowGradient.addColorStop(0, `hsla(50, 100%, 60%, ${opacity * cat.eyeGlow * 0.8})`)
+    glowGradient.addColorStop(0.3, `hsla(45, 90%, 50%, ${opacity * cat.eyeGlow * 0.4})`)
+    glowGradient.addColorStop(1, `hsla(40, 80%, 40%, 0)`)
+    
+    ctx.fillStyle = glowGradient
+    ctx.beginPath()
+    ctx.arc(eyeX, eyeY, glowSize, 0, Math.PI * 2)
+    ctx.fill()
+    
+    // Eye
+    ctx.fillStyle = `hsla(50, 90%, 55%, ${opacity * cat.eyeGlow})`
+    ctx.beginPath()
+    ctx.ellipse(eyeX, eyeY, s * 0.08, s * 0.1, 0, 0, Math.PI * 2)
+    ctx.fill()
+    
+    // Slit pupil
+    ctx.fillStyle = `hsla(0, 0%, 0%, ${opacity})`
+    ctx.beginPath()
+    ctx.ellipse(eyeX + lookX, eyeY + lookY, s * 0.02, s * 0.08, 0, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  
+  ctx.restore()
+}
+
+// ============ Spooky: Watcher Effect ============
+
+interface WatcherState {
+  x: number
+  y: number
+  opacity: number
+  targetOpacity: number
+  height: number
+  sway: number
+  swaySpeed: number
+  breathPhase: number
+  fadeTimer: number
+  visible: boolean
+}
+
+function createWatcherState(width: number, height: number): WatcherState {
+  const side = Math.random() < 0.5 ? 0 : 1
+  return {
+    x: side === 0 ? width * 0.08 : width * 0.92,
+    y: height * 0.85,
+    opacity: 0,
+    targetOpacity: 0,
+    height: height * 0.4 + Math.random() * height * 0.15,
+    sway: 0,
+    swaySpeed: 0.3 + Math.random() * 0.2,
+    breathPhase: 0,
+    fadeTimer: 100 + Math.random() * 200,
+    visible: false,
+  }
+}
+
+function drawWatcher(
+  ctx: CanvasRenderingContext2D,
+  state: any,
+  width: number,
+  height: number,
+  time: number,
+  intensity: number
+): void {
+  const watcher = state.watcher as WatcherState
+  
+  // Appear/disappear logic
+  watcher.fadeTimer--
+  if (watcher.fadeTimer <= 0) {
+    if (watcher.visible) {
+      watcher.targetOpacity = 0
+      if (watcher.opacity < 0.01) {
+        watcher.visible = false
+        watcher.fadeTimer = 200 + Math.random() * 400
+        // Reposition
+        const side = Math.random() < 0.5 ? 0 : 1
+        watcher.x = side === 0 ? width * 0.08 : width * 0.92
+      }
+    } else {
+      watcher.visible = true
+      watcher.targetOpacity = 1
+      watcher.fadeTimer = 300 + Math.random() * 500
+    }
+  }
+  
+  // Smooth fade
+  watcher.opacity += (watcher.targetOpacity - watcher.opacity) * 0.01
+  
+  // Animation
+  watcher.sway += watcher.swaySpeed * 0.01
+  watcher.breathPhase += 0.015
+  
+  const swayAmount = Math.sin(watcher.sway) * 8
+  const breathScale = 1 + Math.sin(watcher.breathPhase) * 0.02
+  
+  const opacity = watcher.opacity * intensity * 0.15 // Very subtle!
+  if (opacity < 0.005) return
+  
+  ctx.save()
+  ctx.translate(watcher.x + swayAmount, watcher.y)
+  ctx.scale(breathScale, 1)
+  
+  const h = watcher.height
+  const w = h * 0.25
+  
+  // Vague humanoid silhouette - very blurry and indistinct
+  const gradient = ctx.createRadialGradient(0, -h * 0.5, 0, 0, -h * 0.5, w * 2)
+  gradient.addColorStop(0, `hsla(260, 30%, 5%, ${opacity})`)
+  gradient.addColorStop(0.5, `hsla(260, 25%, 8%, ${opacity * 0.5})`)
+  gradient.addColorStop(1, `hsla(260, 20%, 10%, 0)`)
+  
+  // Body shape (very rough, shadowy)
+  ctx.fillStyle = gradient
+  ctx.beginPath()
+  ctx.ellipse(0, -h * 0.5, w, h * 0.5, 0, 0, Math.PI * 2)
+  ctx.fill()
+  
+  // Head area (slightly darker concentration)
+  const headGradient = ctx.createRadialGradient(0, -h * 0.85, 0, 0, -h * 0.85, w * 0.8)
+  headGradient.addColorStop(0, `hsla(260, 30%, 3%, ${opacity * 1.2})`)
+  headGradient.addColorStop(0.6, `hsla(260, 25%, 5%, ${opacity * 0.6})`)
+  headGradient.addColorStop(1, `hsla(260, 20%, 8%, 0)`)
+  
+  ctx.fillStyle = headGradient
+  ctx.beginPath()
+  ctx.arc(0, -h * 0.85, w * 0.6, 0, Math.PI * 2)
+  ctx.fill()
+  
+  // Hint of eyes - barely perceptible
+  if (watcher.opacity > 0.5) {
+    const eyeOpacity = (watcher.opacity - 0.5) * 2 * opacity * 3
+    const eyeY = -h * 0.87
+    const eyeSpacing = w * 0.25
+    
+    for (let i = -1; i <= 1; i += 2) {
+      const eyeGlow = ctx.createRadialGradient(i * eyeSpacing, eyeY, 0, i * eyeSpacing, eyeY, w * 0.15)
+      eyeGlow.addColorStop(0, `hsla(0, 0%, 20%, ${eyeOpacity})`)
+      eyeGlow.addColorStop(1, `hsla(0, 0%, 10%, 0)`)
+      
+      ctx.fillStyle = eyeGlow
+      ctx.beginPath()
+      ctx.arc(i * eyeSpacing, eyeY, w * 0.15, 0, Math.PI * 2)
+      ctx.fill()
+    }
+  }
+  
+  ctx.restore()
+}
+
+// ============ Spooky: Creeping Shadows Effect ============
+
+interface ShadowTendril {
+  startX: number
+  startY: number
+  angle: number
+  length: number
+  maxLength: number
+  speed: number
+  width: number
+  segments: number
+  phase: number
+  growing: boolean
+  opacity: number
+}
+
+interface ShadowPool {
+  x: number
+  y: number
+  radius: number
+  maxRadius: number
+  opacity: number
+  growing: boolean
+  pulsePhase: number
+}
+
+function createShadowTendril(width: number, height: number): ShadowTendril {
+  const edge = Math.floor(Math.random() * 4)
+  let startX, startY, angle
+  
+  switch (edge) {
+    case 0: // Top
+      startX = Math.random() * width
+      startY = 0
+      angle = Math.PI / 2 + (Math.random() - 0.5) * 0.5
+      break
+    case 1: // Bottom
+      startX = Math.random() * width
+      startY = height
+      angle = -Math.PI / 2 + (Math.random() - 0.5) * 0.5
+      break
+    case 2: // Left
+      startX = 0
+      startY = Math.random() * height
+      angle = (Math.random() - 0.5) * 0.5
+      break
+    default: // Right
+      startX = width
+      startY = Math.random() * height
+      angle = Math.PI + (Math.random() - 0.5) * 0.5
+      break
+  }
+  
+  return {
+    startX, startY, angle,
+    length: 0,
+    maxLength: 100 + Math.random() * 200,
+    speed: 0.3 + Math.random() * 0.4,
+    width: 30 + Math.random() * 50,
+    segments: 8 + Math.floor(Math.random() * 6),
+    phase: Math.random() * Math.PI * 2,
+    growing: true,
+    opacity: 0,
+  }
+}
+
+function createShadowPool(width: number, height: number): ShadowPool {
+  return {
+    x: Math.random() * width,
+    y: Math.random() * height,
+    radius: 0,
+    maxRadius: 80 + Math.random() * 120,
+    opacity: 0,
+    growing: Math.random() < 0.5,
+    pulsePhase: Math.random() * Math.PI * 2,
+  }
+}
+
+function drawShadows(
+  ctx: CanvasRenderingContext2D,
+  state: any,
+  width: number,
+  height: number,
+  time: number,
+  intensity: number
+): void {
+  const { shadowTendrils, shadowPools } = state
+  
+  // Draw pools first (underneath)
+  shadowPools.forEach((pool: ShadowPool) => {
+    pool.pulsePhase += 0.01
+    
+    if (pool.growing) {
+      pool.radius += 0.2
+      pool.opacity = Math.min(1, pool.opacity + 0.005)
+      if (pool.radius >= pool.maxRadius) {
+        pool.growing = false
+      }
+    } else {
+      pool.opacity -= 0.003
+      if (pool.opacity <= 0) {
+        // Reset
+        pool.x = Math.random() * width
+        pool.y = Math.random() * height
+        pool.radius = 0
+        pool.maxRadius = 80 + Math.random() * 120
+        pool.opacity = 0
+        pool.growing = true
+      }
+    }
+    
+    const pulseScale = 1 + Math.sin(pool.pulsePhase) * 0.05
+    const currentRadius = pool.radius * pulseScale
+    const currentOpacity = pool.opacity * intensity * 0.2
+    
+    if (currentOpacity < 0.01) return
+    
+    const gradient = ctx.createRadialGradient(pool.x, pool.y, 0, pool.x, pool.y, currentRadius)
+    gradient.addColorStop(0, `hsla(260, 30%, 3%, ${currentOpacity})`)
+    gradient.addColorStop(0.4, `hsla(260, 25%, 5%, ${currentOpacity * 0.7})`)
+    gradient.addColorStop(0.7, `hsla(260, 20%, 7%, ${currentOpacity * 0.3})`)
+    gradient.addColorStop(1, `hsla(260, 15%, 10%, 0)`)
+    
+    ctx.fillStyle = gradient
+    ctx.beginPath()
+    ctx.arc(pool.x, pool.y, currentRadius, 0, Math.PI * 2)
+    ctx.fill()
+  })
+  
+  // Draw tendrils
+  shadowTendrils.forEach((tendril: ShadowTendril) => {
+    tendril.phase += 0.02
+    
+    if (tendril.growing) {
+      tendril.length += tendril.speed
+      tendril.opacity = Math.min(1, tendril.opacity + 0.008)
+      if (tendril.length >= tendril.maxLength) {
+        tendril.growing = false
+      }
+    } else {
+      tendril.opacity -= 0.004
+      if (tendril.opacity <= 0) {
+        // Reset
+        Object.assign(tendril, createShadowTendril(width, height))
+      }
+    }
+    
+    const currentOpacity = tendril.opacity * intensity * 0.25
+    if (currentOpacity < 0.01) return
+    
+    // Draw tendril as series of connected circles
+    ctx.beginPath()
+    
+    let x = tendril.startX
+    let y = tendril.startY
+    let angle = tendril.angle
+    
+    for (let i = 0; i < tendril.segments; i++) {
+      const segmentLength = tendril.length / tendril.segments
+      const progress = i / tendril.segments
+      const waveOffset = Math.sin(tendril.phase + i * 0.5) * 15 * progress
+      
+      const nextX = x + Math.cos(angle) * segmentLength + Math.cos(angle + Math.PI / 2) * waveOffset
+      const nextY = y + Math.sin(angle) * segmentLength + Math.sin(angle + Math.PI / 2) * waveOffset
+      
+      const segmentWidth = tendril.width * (1 - progress * 0.7)
+      const segmentOpacity = currentOpacity * (1 - progress * 0.5)
+      
+      const gradient = ctx.createRadialGradient(x, y, 0, x, y, segmentWidth)
+      gradient.addColorStop(0, `hsla(260, 25%, 5%, ${segmentOpacity})`)
+      gradient.addColorStop(0.5, `hsla(260, 20%, 7%, ${segmentOpacity * 0.5})`)
+      gradient.addColorStop(1, `hsla(260, 15%, 10%, 0)`)
+      
+      ctx.fillStyle = gradient
+      ctx.beginPath()
+      ctx.arc(x, y, segmentWidth, 0, Math.PI * 2)
+      ctx.fill()
+      
+      x = nextX
+      y = nextY
+      angle += (Math.random() - 0.5) * 0.1
+    }
+  })
 }
