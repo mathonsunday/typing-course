@@ -79,8 +79,8 @@ function TypingApp() {
           />
         )}
         
-        {/* Session stats */}
-        <SessionStats />
+        {/* Session stats - only show on home screen */}
+        {!practiceText && <SessionStats />}
       </div>
       
       {/* Settings panel */}
