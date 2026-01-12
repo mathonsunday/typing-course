@@ -13,8 +13,6 @@ const GOAL_OPTIONS = [5, 10, 15, 20, 30, 45, 60]
 
 const AMBIANCE_STYLES = [
   { id: 'none', name: 'None' },
-  { id: 'particles', name: 'Particles' },
-  { id: 'both', name: 'Constellation' },
   { id: 'geometric', name: 'Geometric' },
   { id: 'fireflies', name: 'Fireflies' },
   { id: 'nebula', name: 'Nebula' },

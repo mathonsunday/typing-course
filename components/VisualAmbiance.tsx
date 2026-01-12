@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef } from 'react'
 
-export type AmbianceStyle = 'none' | 'particles' | 'both' | 'geometric' | 'fireflies' | 'nebula'
+export type AmbianceStyle = 'none' | 'geometric' | 'fireflies' | 'nebula'
 
 interface VisualAmbianceProps {
   style: AmbianceStyle
@@ -14,11 +14,6 @@ export default function VisualAmbiance({ style, intensity = 0.5 }: VisualAmbianc
   const animationRef = useRef<number | null>(null)
   const stateRef = useRef<any>({})
   const timeRef = useRef(0)
-  const mouseRef = useRef({ x: -1000, y: -1000 })
-  
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    mouseRef.current = { x: e.clientX, y: e.clientY }
-  }, [])
   
   useEffect(() => {
     if (style === 'none') return
@@ -28,8 +23,6 @@ export default function VisualAmbiance({ style, intensity = 0.5 }: VisualAmbianc
     
     const ctx = canvas.getContext('2d')
     if (!ctx) return
-    
-    window.addEventListener('mousemove', handleMouseMove)
     
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
     const resizeCanvas = () => {
@@ -52,12 +45,6 @@ export default function VisualAmbiance({ style, intensity = 0.5 }: VisualAmbianc
       timeRef.current += 0.016
       
       switch (style) {
-        case 'particles':
-          drawParticles(ctx, stateRef.current, width, height, mouseRef.current, timeRef.current, intensity, false)
-          break
-        case 'both':
-          drawConstellation(ctx, stateRef.current, width, height, mouseRef.current, timeRef.current, intensity)
-          break
         case 'geometric':
           drawGeometric(ctx, stateRef.current, width, height, timeRef.current, intensity)
           break
@@ -76,12 +63,11 @@ export default function VisualAmbiance({ style, intensity = 0.5 }: VisualAmbianc
     
     return () => {
       window.removeEventListener('resize', resizeCanvas)
-      window.removeEventListener('mousemove', handleMouseMove)
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current)
       }
     }
-  }, [style, intensity, handleMouseMove])
+  }, [style, intensity])
   
   if (style === 'none') return null
   
@@ -103,16 +89,6 @@ function initializeState(
   intensity: number
 ) {
   switch (style) {
-    case 'particles':
-    case 'both':
-      const particleCount = Math.floor(60 * intensity) + 25
-      stateRef.current = {
-        particles: Array.from({ length: particleCount }, () => createParticle(width, height)),
-        orbs: Array.from({ length: 4 }, () => createOrb(width, height)),
-        connections: []
-      }
-      break
-      
     case 'geometric':
       stateRef.current = {
         nodes: createHexGrid(width, height),
@@ -136,226 +112,7 @@ function initializeState(
   }
 }
 
-// ============ Particle Types & Functions ============
-
-interface Particle {
-  x: number
-  y: number
-  baseX: number
-  baseY: number
-  size: number
-  speedX: number
-  speedY: number
-  opacity: number
-  hue: number
-  saturation: number
-  lightness: number
-  phase: number
-  pulseSpeed: number
-  orbitRadius: number
-  orbitSpeed: number
-}
-
-interface Orb {
-  x: number
-  y: number
-  radius: number
-  hue: number
-  speedX: number
-  speedY: number
-  pulsePhase: number
-  pulseSpeed: number
-}
-
-function createParticle(width: number, height: number): Particle {
-  const x = Math.random() * width
-  const y = Math.random() * height
-  const colorChoice = Math.random()
-  let hue, saturation, lightness
-  
-  if (colorChoice < 0.4) {
-    hue = 210 + Math.random() * 30
-    saturation = 70 + Math.random() * 20
-    lightness = 55 + Math.random() * 15
-  } else if (colorChoice < 0.7) {
-    hue = 260 + Math.random() * 30
-    saturation = 60 + Math.random() * 25
-    lightness = 60 + Math.random() * 15
-  } else if (colorChoice < 0.9) {
-    hue = 180 + Math.random() * 20
-    saturation = 65 + Math.random() * 20
-    lightness = 55 + Math.random() * 15
-  } else {
-    hue = 280 + Math.random() * 40
-    saturation = 50 + Math.random() * 30
-    lightness = 65 + Math.random() * 10
-  }
-  
-  return {
-    x, y, baseX: x, baseY: y,
-    size: Math.random() * 2.5 + 0.5,
-    // TUNED: Much faster base speed (was 0.15)
-    speedX: (Math.random() - 0.5) * 0.8 + (Math.random() > 0.5 ? 0.2 : -0.2),
-    speedY: (Math.random() - 0.5) * 0.6 - 0.3, // Stronger upward drift
-    opacity: Math.random() * 0.5 + 0.3,
-    hue, saturation, lightness,
-    phase: Math.random() * Math.PI * 2,
-    pulseSpeed: 0.8 + Math.random() * 1.5,
-    orbitRadius: Math.random() * 20 + 8,
-    orbitSpeed: (Math.random() - 0.5) * 0.04,
-  }
-}
-
-function createOrb(width: number, height: number): Orb {
-  return {
-    x: Math.random() * width,
-    y: Math.random() * height,
-    radius: 150 + Math.random() * 200,
-    hue: 220 + Math.random() * 60,
-    // TUNED: Faster orb movement
-    speedX: (Math.random() - 0.5) * 0.6,
-    speedY: (Math.random() - 0.5) * 0.6,
-    pulsePhase: Math.random() * Math.PI * 2,
-    pulseSpeed: 0.3 + Math.random() * 0.4,
-  }
-}
-
-function drawParticles(
-  ctx: CanvasRenderingContext2D,
-  state: any,
-  width: number,
-  height: number,
-  mouse: { x: number; y: number },
-  time: number,
-  intensity: number,
-  drawConnections: boolean
-): void {
-  const { particles, connections } = state
-  // TUNED: Intensity now affects speed multiplier
-  const speedMultiplier = 0.6 + intensity * 0.8
-  
-  if (drawConnections) {
-    connections.length = 0
-    const connectionDistance = 100 * intensity
-    
-    for (let i = 0; i < particles.length; i++) {
-      for (let j = i + 1; j < particles.length; j++) {
-        const dx = particles[i].x - particles[j].x
-        const dy = particles[i].y - particles[j].y
-        const dist = Math.sqrt(dx * dx + dy * dy)
-        
-        if (dist < connectionDistance) {
-          connections.push({ from: i, to: j, opacity: 1 - dist / connectionDistance })
-        }
-      }
-    }
-    
-    ctx.lineWidth = 0.5
-    for (const conn of connections) {
-      const p1 = particles[conn.from]
-      const p2 = particles[conn.to]
-      
-      const gradient = ctx.createLinearGradient(p1.x, p1.y, p2.x, p2.y)
-      gradient.addColorStop(0, `hsla(${p1.hue}, ${p1.saturation}%, ${p1.lightness}%, ${conn.opacity * p1.opacity * intensity * 0.25})`)
-      gradient.addColorStop(1, `hsla(${p2.hue}, ${p2.saturation}%, ${p2.lightness}%, ${conn.opacity * p2.opacity * intensity * 0.25})`)
-      
-      ctx.strokeStyle = gradient
-      ctx.beginPath()
-      ctx.moveTo(p1.x, p1.y)
-      ctx.lineTo(p2.x, p2.y)
-      ctx.stroke()
-    }
-  }
-  
-  particles.forEach((particle: Particle) => {
-    particle.phase += particle.pulseSpeed * 0.02
-    const orbitX = Math.cos(time * particle.orbitSpeed + particle.phase) * particle.orbitRadius * 0.5
-    const orbitY = Math.sin(time * particle.orbitSpeed * 0.7 + particle.phase) * particle.orbitRadius * 0.3
-    
-    // TUNED: Apply speed multiplier based on intensity
-    particle.baseX += particle.speedX * speedMultiplier
-    particle.baseY += particle.speedY * speedMultiplier
-    particle.x = particle.baseX + orbitX
-    particle.y = particle.baseY + orbitY
-    
-    const dx = particle.x - mouse.x
-    const dy = particle.y - mouse.y
-    const distToMouse = Math.sqrt(dx * dx + dy * dy)
-    if (distToMouse < 150) {
-      const force = (1 - distToMouse / 150) * 0.5
-      particle.x += dx * force * 0.02
-      particle.y += dy * force * 0.02
-    }
-    
-    const padding = 50
-    if (particle.baseX < -padding) particle.baseX = width + padding
-    if (particle.baseX > width + padding) particle.baseX = -padding
-    if (particle.baseY < -padding) particle.baseY = height + padding
-    if (particle.baseY > height + padding) particle.baseY = -padding
-    
-    const pulse = Math.sin(particle.phase) * 0.2 + 0.8
-    const currentOpacity = particle.opacity * pulse * intensity
-    const sizeMultiplier = 1 + Math.sin(particle.phase * 1.3) * 0.2
-    const currentSize = particle.size * sizeMultiplier
-    
-    const glowSize = currentSize * 6
-    const glowGradient = ctx.createRadialGradient(particle.x, particle.y, 0, particle.x, particle.y, glowSize)
-    glowGradient.addColorStop(0, `hsla(${particle.hue}, ${particle.saturation}%, ${particle.lightness}%, ${currentOpacity * 0.35})`)
-    glowGradient.addColorStop(0.4, `hsla(${particle.hue}, ${particle.saturation}%, ${particle.lightness}%, ${currentOpacity * 0.12})`)
-    glowGradient.addColorStop(1, `hsla(${particle.hue}, ${particle.saturation}%, ${particle.lightness}%, 0)`)
-    
-    ctx.fillStyle = glowGradient
-    ctx.beginPath()
-    ctx.arc(particle.x, particle.y, glowSize, 0, Math.PI * 2)
-    ctx.fill()
-    
-    ctx.fillStyle = `hsla(${particle.hue}, ${particle.saturation}%, ${particle.lightness + 15}%, ${currentOpacity})`
-    ctx.beginPath()
-    ctx.arc(particle.x, particle.y, currentSize, 0, Math.PI * 2)
-    ctx.fill()
-  })
-}
-
-function drawConstellation(
-  ctx: CanvasRenderingContext2D,
-  state: any,
-  width: number,
-  height: number,
-  mouse: { x: number; y: number },
-  time: number,
-  intensity: number
-): void {
-  const speedMultiplier = 0.6 + intensity * 0.8
-  
-  state.orbs.forEach((orb: Orb) => {
-    // TUNED: Faster orb movement with intensity
-    orb.x += orb.speedX * speedMultiplier
-    orb.y += orb.speedY * speedMultiplier
-    
-    if (orb.x < -orb.radius || orb.x > width + orb.radius) orb.speedX *= -1
-    if (orb.y < -orb.radius || orb.y > height + orb.radius) orb.speedY *= -1
-    
-    orb.pulsePhase += orb.pulseSpeed * 0.02
-    const pulse = Math.sin(orb.pulsePhase) * 0.15 + 0.85
-    const currentRadius = orb.radius * pulse
-    
-    orb.hue += 0.02
-    if (orb.hue > 280) orb.hue = 220
-    
-    const gradient = ctx.createRadialGradient(orb.x, orb.y, 0, orb.x, orb.y, currentRadius)
-    gradient.addColorStop(0, `hsla(${orb.hue}, 50%, 35%, ${intensity * 0.12})`)
-    gradient.addColorStop(0.3, `hsla(${orb.hue}, 45%, 25%, ${intensity * 0.08})`)
-    gradient.addColorStop(0.6, `hsla(${orb.hue + 20}, 40%, 18%, ${intensity * 0.04})`)
-    gradient.addColorStop(1, 'hsla(0, 0%, 0%, 0)')
-    
-    ctx.fillStyle = gradient
-    ctx.fillRect(orb.x - currentRadius, orb.y - currentRadius, currentRadius * 2, currentRadius * 2)
-  })
-  
-  drawParticles(ctx, state, width, height, mouse, time, intensity, true)
-}
-
-// ============ Geometric Effect (TUNED: Much more subtle) ============
+// ============ Geometric Effect ============
 
 interface HexNode {
   x: number
@@ -383,7 +140,7 @@ function createHexGrid(width: number, height: number): HexNode[] {
         baseY: row * rowHeight,
         connections: [],
         phase: Math.random() * Math.PI * 2,
-        pulseSpeed: 0.2 + Math.random() * 0.3, // Slower pulse
+        pulseSpeed: 0.2 + Math.random() * 0.3,
       })
     }
   }
@@ -412,12 +169,11 @@ function drawGeometric(
   intensity: number
 ): void {
   const { nodes } = state
-  // TUNED: Much slower, subtler wave motion
   const waveSpeed = 0.25
-  const waveAmplitude = 8 * intensity // Reduced from 15
+  const waveAmplitude = 8 * intensity
   
   nodes.forEach((node: HexNode) => {
-    node.phase += node.pulseSpeed * 0.008 // Slower
+    node.phase += node.pulseSpeed * 0.008
     
     const waveX = Math.sin(time * waveSpeed + node.baseY * 0.008 + node.baseX * 0.003) * waveAmplitude
     const waveY = Math.cos(time * waveSpeed * 0.5 + node.baseX * 0.008) * waveAmplitude * 0.5
@@ -428,7 +184,6 @@ function drawGeometric(
   
   const drawnConnections = new Set<string>()
   
-  // TUNED: Much more subtle lines
   nodes.forEach((node: HexNode, i: number) => {
     node.connections.forEach((j: number) => {
       const key = i < j ? `${i}-${j}` : `${j}-${i}`
@@ -440,7 +195,6 @@ function drawGeometric(
       const midY = (node.y + other.y) / 2
       
       const hue = 220 + Math.sin(time * 0.15 + midX * 0.002 + midY * 0.002) * 30
-      // TUNED: Much lower opacity
       const brightness = 0.1 + Math.sin(time * 0.3 + node.phase) * 0.05
       
       ctx.strokeStyle = `hsla(${hue}, 40%, 50%, ${brightness * intensity})`
@@ -452,13 +206,11 @@ function drawGeometric(
     })
   })
   
-  // TUNED: Smaller, subtler node glows
   nodes.forEach((node: HexNode) => {
     const hue = 220 + Math.sin(time * 0.2 + node.phase) * 20
-    const pulse = Math.sin(node.phase) * 0.2 + 0.5 // Lower base
-    const size = 1.5 + pulse * 0.8 // Smaller
+    const pulse = Math.sin(node.phase) * 0.2 + 0.5
+    const size = 1.5 + pulse * 0.8
     
-    // Subtle glow only
     const glowGradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, size * 4)
     glowGradient.addColorStop(0, `hsla(${hue}, 50%, 60%, ${pulse * intensity * 0.3})`)
     glowGradient.addColorStop(0.5, `hsla(${hue}, 40%, 50%, ${pulse * intensity * 0.1})`)
@@ -477,7 +229,7 @@ function drawGeometric(
   })
 }
 
-// ============ Fireflies Effect (TUNED: Much slower blink) ============
+// ============ Fireflies Effect ============
 
 interface Firefly {
   x: number
@@ -516,7 +268,6 @@ function createFirefly(width: number, height: number): Firefly {
     size: 2 + Math.random() * 1.5,
     hue,
     phase: Math.random() * Math.PI * 2,
-    // TUNED: Much slower pulse (was 1-3, now 0.15-0.35)
     pulseSpeed: 0.15 + Math.random() * 0.2,
     glowIntensity: 0.4 + Math.random() * 0.4,
     trail: [],
@@ -580,13 +331,11 @@ function drawFireflies(
       point.opacity = 1 - (i / fly.trail.length)
     })
     
-    // TUNED: Much slower phase update
     fly.phase += fly.pulseSpeed * 0.02
     
-    // TUNED: Gentler pulse curve (less sharp peaks)
-    // Use a smoother sine wave instead of sharp power curve
+    // Gentle pulse curve
     const pulseRaw = Math.sin(fly.phase)
-    const pulseValue = pulseRaw > 0 ? Math.pow(pulseRaw, 2) : 0 // Only positive, softer curve
+    const pulseValue = pulseRaw > 0 ? Math.pow(pulseRaw, 2) : 0
     const brightness = 0.25 + pulseValue * 0.75
     
     // Draw trail
@@ -633,7 +382,7 @@ function drawFireflies(
   })
 }
 
-// ============ Nebula Effect (unchanged - already good) ============
+// ============ Nebula Effect ============
 
 interface Cloud {
   x: number
