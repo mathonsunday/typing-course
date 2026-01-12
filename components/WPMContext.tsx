@@ -4,14 +4,14 @@ interface WPMContextProps {
   wpm: number
 }
 
-// Common typing tasks with approximate word counts
+// Common typing tasks for engineers who use AI tools
 const TYPING_TASKS = [
-  { name: 'Quick Slack message', words: 30, icon: '💬' },
-  { name: 'Short email', words: 100, icon: '📧' },
-  { name: 'Detailed email', words: 300, icon: '📝' },
-  { name: 'Meeting notes', words: 500, icon: '📋' },
-  { name: 'One-pager document', words: 750, icon: '📄' },
-  { name: 'Long report (2 pages)', words: 1000, icon: '📑' },
+  { name: 'Quick Slack message', words: 20, icon: '💬' },
+  { name: 'Short AI prompt', words: 40, icon: '🤖' },
+  { name: 'Code review comment', words: 50, icon: '👀' },
+  { name: 'Detailed AI prompt', words: 100, icon: '✨' },
+  { name: 'Slack thread (few paragraphs)', words: 150, icon: '🧵' },
+  { name: 'Quick design sketch', words: 250, icon: '📝' },
 ]
 
 function formatTime(minutes: number): string {
@@ -58,8 +58,7 @@ export default function WPMContext({ wpm }: WPMContextProps) {
       </div>
       
       <p className="mt-4 text-xs text-zinc-500">
-        These estimates assume continuous typing. Real-world tasks include thinking time, 
-        editing, and breaks — actual time will be longer.
+        Pure typing time only — thinking, editing, and context-switching add more.
       </p>
     </div>
   )
