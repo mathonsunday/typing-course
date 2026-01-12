@@ -197,41 +197,11 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
     }
   }, [isComplete, resetSession, onReset, currentIndex])
   
-  // Handle composition events (for dead key / accent input)
-  const handleCompositionStart = useCallback((e: React.CompositionEvent<HTMLInputElement>) => {
-    isComposingRef.current = true
-    setDebugInfo({ char: `composing: "${e.data || '?'}"`, composing: true, timestamp: Date.now() })
-  }, [])
-  
-  const handleCompositionEnd = useCallback((e: React.CompositionEvent<HTMLInputElement>) => {
-    isComposingRef.current = false
-    setDebugInfo({ char: `composed: "${e.data}"`, composing: false, timestamp: Date.now() })
-  }, [])
-  
-  // Handle actual character input (supports dead keys / accent composition)
-  const handleInput = useCallback(async (e: React.FormEvent<HTMLInputElement>) => {
-    // Skip if we're in the middle of composition (dead key waiting for next char)
-    if (isComposingRef.current) {
-      setDebugInfo({ char: `(skipped - composing)`, composing: true, timestamp: Date.now() })
-      return
-    }
+  // Process a typed character (shared between direct input and composition)
+  const processCharacter = useCallback(async (char: string, source: string) => {
+    if (!char || isComplete) return
     
-    const input = e.currentTarget
-    const typedChar = input.value
-    
-    // Clear the input immediately
-    input.value = ''
-    
-    // Ignore if no character
-    if (!typedChar) return
-    
-    // Take only the last character (in case multiple accumulated)
-    const char = typedChar.slice(-1)
-    
-    // Debug: show what we received
-    setDebugInfo({ char: `received: "${char}" (code: ${char.charCodeAt(0)})`, composing: false, timestamp: Date.now() })
-    
-    if (isComplete) return
+    setDebugInfo({ char: `${source}: "${char}" (code: ${char.charCodeAt(0)})`, composing: false, timestamp: Date.now() })
     
     // Ensure audio is ready (browser autoplay policy)
     await ensureAudioReady()
@@ -281,7 +251,6 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
     
     // Check for completion
     if (newIndex >= text.length) {
-      // Use active time, not wall clock time
       const duration = activeTimeRef.current
       
       setIsComplete(true)
@@ -304,6 +273,51 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
       onComplete?.()
     }
   }, [currentIndex, text, startTime, isComplete, isIdle, settings, saveSession, onComplete])
+  
+  // Handle composition events (for dead key / accent input)
+  const handleCompositionStart = useCallback((e: React.CompositionEvent<HTMLInputElement>) => {
+    isComposingRef.current = true
+    setDebugInfo({ char: `composing: "${e.data || '?'}"`, composing: true, timestamp: Date.now() })
+  }, [])
+  
+  const handleCompositionEnd = useCallback((e: React.CompositionEvent<HTMLInputElement>) => {
+    isComposingRef.current = false
+    const composedChar = e.data
+    
+    // Clear the input
+    if (e.currentTarget) {
+      e.currentTarget.value = ''
+    }
+    
+    // Process the composed character
+    if (composedChar && composedChar.length === 1) {
+      processCharacter(composedChar, 'composed')
+    }
+  }, [processCharacter])
+  
+  // Handle actual character input (for non-composed characters)
+  const handleInput = useCallback(async (e: React.FormEvent<HTMLInputElement>) => {
+    // Skip if we're in the middle of composition (dead key waiting for next char)
+    if (isComposingRef.current) {
+      setDebugInfo({ char: `(skipped - composing)`, composing: true, timestamp: Date.now() })
+      return
+    }
+    
+    const input = e.currentTarget
+    const typedChar = input.value
+    
+    // Clear the input immediately
+    input.value = ''
+    
+    // Ignore if no character
+    if (!typedChar) return
+    
+    // Take only the last character (in case multiple accumulated)
+    const char = typedChar.slice(-1)
+    
+    // Process the character
+    processCharacter(char, 'received')
+  }, [processCharacter])
   
   // Calculate current accuracy
   const accuracy = currentIndex > 0 
