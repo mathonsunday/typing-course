@@ -47,7 +47,6 @@ export default function GraduationProgress({ variant = 'full' }: GraduationProgr
   }
   
   // Progress toward graduation
-  const progressPercent = Math.min(100, (status.readyCount / GRADUATION_THRESHOLD) * 100)
   const remaining = GRADUATION_THRESHOLD - status.readyCount
   
   if (variant === 'compact') {
@@ -84,26 +83,13 @@ export default function GraduationProgress({ variant = 'full' }: GraduationProgr
     )
   }
   
-  // Full variant
+  // Full variant - simplified and encouraging
   return (
-    <div className="bg-surface-raised border border-zinc-800 rounded-xl p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-medium text-zinc-200">Path to Graduation</h3>
-        <span className="text-sm text-zinc-500">
-          {status.readyCount} of {GRADUATION_THRESHOLD} sessions
-        </span>
-      </div>
+    <div className="bg-surface-raised border border-zinc-800 rounded-xl p-5">
+      <h3 className="text-sm font-medium text-zinc-300 mb-4">Path to Graduation</h3>
       
-      {/* Progress bar */}
-      <div className="h-3 bg-zinc-800 rounded-full overflow-hidden mb-4">
-        <div
-          className="h-full bg-gradient-to-r from-green-600 to-green-400 transition-all duration-500"
-          style={{ width: `${progressPercent}%` }}
-        />
-      </div>
-      
-      {/* Session dots */}
-      <div className="flex items-center justify-center gap-2 mb-4">
+      {/* Session dots with labels */}
+      <div className="flex items-center justify-center gap-3 mb-4">
         {Array.from({ length: GRADUATION_WINDOW }).map((_, i) => {
           const assessedSessions = progress.sessions.filter(s => s.selfAssessment)
           const sessionIndex = assessedSessions.length - GRADUATION_WINDOW + i
@@ -114,7 +100,7 @@ export default function GraduationProgress({ variant = 'full' }: GraduationProgr
           return (
             <div
               key={i}
-              className={`w-4 h-4 rounded-full transition-all ${
+              className={`w-5 h-5 rounded-full transition-all ${
                 isEmpty
                   ? 'bg-zinc-800 border-2 border-zinc-700'
                   : isReady
@@ -123,30 +109,38 @@ export default function GraduationProgress({ variant = 'full' }: GraduationProgr
               }`}
               title={
                 isEmpty 
-                  ? 'Complete a session' 
+                  ? 'Future session' 
                   : isReady 
                     ? '✓ Ready for work' 
-                    : 'Still practicing'
+                    : 'Still building confidence'
               }
             />
           )
         })}
       </div>
       
-      {/* Status message */}
-      <p className="text-center text-sm text-zinc-400">
-        {remaining > 0 ? (
-          <>
-            {remaining} more "Ready for work" session{remaining > 1 ? 's' : ''} to graduate
-          </>
+      {/* Legend */}
+      <div className="flex items-center justify-center gap-4 text-xs text-zinc-500 mb-3">
+        <span className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-green-500" /> Ready
+        </span>
+        <span className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-zinc-600" /> Practicing
+        </span>
+        <span className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-zinc-800 border border-zinc-700" /> Upcoming
+        </span>
+      </div>
+      
+      {/* Encouraging message */}
+      <p className="text-center text-xs text-zinc-500">
+        {status.readyCount === 0 ? (
+          <>Keep practicing — graduation happens when typing feels automatic</>
+        ) : status.readyCount < GRADUATION_THRESHOLD ? (
+          <>{status.readyCount} down, {remaining} to go! You're making progress.</>
         ) : (
           <span className="text-green-400">Almost there! Keep it up!</span>
         )}
-      </p>
-      
-      {/* Explanation */}
-      <p className="text-center text-xs text-zinc-600 mt-3">
-        Graduate by feeling "Ready for work" in {GRADUATION_THRESHOLD} of your last {GRADUATION_WINDOW} sessions
       </p>
     </div>
   )
