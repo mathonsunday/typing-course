@@ -9,7 +9,8 @@ type ActiveFinger = { hand: 'left' | 'right'; finger: number }
 // Characters that require holding shift
 const SHIFTED_CHARS = new Set([
   // Uppercase letters
-  ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+  'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
   // Shifted punctuation
   '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+',
   '{', '}', '|', ':', '"', '<', '>', '?', '~',
