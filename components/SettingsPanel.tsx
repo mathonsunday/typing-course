@@ -14,7 +14,10 @@ const GOAL_OPTIONS = [5, 10, 15, 20, 30, 45, 60]
 const AMBIANCE_STYLES = [
   { id: 'none', name: 'None' },
   { id: 'particles', name: 'Particles' },
-  { id: 'both', name: 'Particles + Glow' },
+  { id: 'both', name: 'Constellation' },
+  { id: 'geometric', name: 'Geometric' },
+  { id: 'fireflies', name: 'Fireflies' },
+  { id: 'nebula', name: 'Nebula' },
 ] as const
 
 export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
@@ -195,12 +198,12 @@ export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           {/* Visual ambiance */}
           <div className="pt-4 border-t border-zinc-800">
             <div className="text-sm font-medium text-zinc-100 mb-2">Visual ambiance</div>
-            <div className="flex gap-2 mb-3">
+            <div className="grid grid-cols-3 gap-2 mb-3">
               {AMBIANCE_STYLES.map(({ id, name }) => (
                 <button
                   key={id}
                   onClick={() => setSettings({ ambianceStyle: id as any })}
-                  className={`flex-1 px-3 py-2 rounded-lg text-sm transition-colors ${
+                  className={`px-3 py-2 rounded-lg text-sm transition-colors ${
                     settings.ambianceStyle === id
                       ? 'bg-accent text-white'
                       : 'bg-surface text-zinc-400 hover:bg-zinc-800'

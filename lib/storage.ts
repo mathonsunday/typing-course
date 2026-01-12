@@ -21,7 +21,7 @@ export interface TypingSession {
 }
 
 export type FingerGuideMode = 'hands' | 'text' | 'keyboard'
-export type AmbianceStyle = 'none' | 'particles' | 'both'
+export type AmbianceStyle = 'none' | 'particles' | 'both' | 'geometric' | 'fireflies' | 'nebula'
 
 export interface UserSettings {
   showFingerGuide: boolean
