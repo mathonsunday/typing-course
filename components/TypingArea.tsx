@@ -143,7 +143,11 @@ export default function TypingArea({ text, onComplete, onReset, onDone }: Typing
     resetSession()
   }, [text, resetSession])
   
-  // Update WPM and elapsed time every 100ms during typing (with idle detection)
+  // Track last WPM update time to avoid flickering
+  const lastWPMUpdateRef = useRef<number>(0)
+  const WPM_UPDATE_INTERVAL = 1000 // Only update WPM display every 1 second
+  
+  // Update elapsed time every 100ms, but WPM only every second (with idle detection)
   useEffect(() => {
     if (!startTime || isComplete) return
     
@@ -161,7 +165,12 @@ export default function TypingArea({ text, onComplete, onReset, onDone }: Typing
         const delta = now - lastTickRef.current
         activeTimeRef.current += delta
         setElapsedMs(activeTimeRef.current)
-        setCurrentWPM(calculateWPM(correctCountRef.current, activeTimeRef.current))
+        
+        // Only update WPM display every WPM_UPDATE_INTERVAL to reduce flickering
+        if (now - lastWPMUpdateRef.current >= WPM_UPDATE_INTERVAL) {
+          setCurrentWPM(calculateWPM(correctCountRef.current, activeTimeRef.current))
+          lastWPMUpdateRef.current = now
+        }
       }
       
       lastTickRef.current = shouldCountTime ? now : null
