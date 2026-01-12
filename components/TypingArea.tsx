@@ -36,29 +36,38 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
   const containerRef = useRef<HTMLDivElement>(null)
   
   // Split text into lines for windowed display
-  // We'll wrap text at ~60 characters per line
+  // Each line is an exact slice of the original text with correct indices
   const lines = useMemo(() => {
-    const words = text.split(' ')
+    const MAX_LINE_LENGTH = 55
     const result: { text: string; startIndex: number }[] = []
-    let currentLine = ''
-    let currentStartIndex = 0
-    let charCount = 0
     
-    words.forEach((word, wordIndex) => {
-      const wordWithSpace = wordIndex === 0 ? word : ' ' + word
+    let lineStart = 0
+    
+    while (lineStart < text.length) {
+      // Calculate potential line end
+      let lineEnd = Math.min(lineStart + MAX_LINE_LENGTH, text.length)
       
-      if (currentLine.length + wordWithSpace.length > 55 && currentLine.length > 0) {
-        result.push({ text: currentLine, startIndex: currentStartIndex })
-        currentStartIndex = charCount
-        currentLine = word
-      } else {
-        currentLine += wordWithSpace
+      // If we're not at the end of text, try to break at a word boundary
+      if (lineEnd < text.length) {
+        // Look backwards for a space to break at
+        let breakPoint = lineEnd
+        while (breakPoint > lineStart && text[breakPoint] !== ' ') {
+          breakPoint--
+        }
+        
+        if (breakPoint > lineStart) {
+          // Found a space - include it at the end of this line, next line starts after it
+          lineEnd = breakPoint + 1
+        }
+        // If no space found (very long word), just break at MAX_LINE_LENGTH
       }
-      charCount += wordWithSpace.length
-    })
-    
-    if (currentLine) {
-      result.push({ text: currentLine, startIndex: currentStartIndex })
+      
+      result.push({
+        text: text.slice(lineStart, lineEnd),
+        startIndex: lineStart
+      })
+      
+      lineStart = lineEnd
     }
     
     return result
