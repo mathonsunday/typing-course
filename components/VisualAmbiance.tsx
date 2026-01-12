@@ -31,7 +31,6 @@ export default function VisualAmbiance({ style, intensity = 0.5 }: VisualAmbianc
     
     window.addEventListener('mousemove', handleMouseMove)
     
-    // Set canvas size
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
     const resizeCanvas = () => {
       canvas.width = window.innerWidth * dpr
@@ -39,17 +38,13 @@ export default function VisualAmbiance({ style, intensity = 0.5 }: VisualAmbianc
       canvas.style.width = `${window.innerWidth}px`
       canvas.style.height = `${window.innerHeight}px`
       ctx.scale(dpr, dpr)
-      
-      // Reinitialize state on resize
       initializeState(style, window.innerWidth, window.innerHeight, stateRef, intensity)
     }
     resizeCanvas()
     window.addEventListener('resize', resizeCanvas)
     
-    // Initialize state
     initializeState(style, window.innerWidth, window.innerHeight, stateRef, intensity)
     
-    // Animation loop
     const animate = () => {
       const width = window.innerWidth
       const height = window.innerHeight
@@ -110,10 +105,10 @@ function initializeState(
   switch (style) {
     case 'particles':
     case 'both':
-      const particleCount = Math.floor(80 * intensity) + 30
+      const particleCount = Math.floor(60 * intensity) + 25
       stateRef.current = {
         particles: Array.from({ length: particleCount }, () => createParticle(width, height)),
-        orbs: Array.from({ length: 5 }, () => createOrb(width, height)),
+        orbs: Array.from({ length: 4 }, () => createOrb(width, height)),
         connections: []
       }
       break
@@ -126,7 +121,7 @@ function initializeState(
       break
       
     case 'fireflies':
-      const fireflyCount = Math.floor(40 * intensity) + 15
+      const fireflyCount = Math.floor(25 * intensity) + 12
       stateRef.current = {
         fireflies: Array.from({ length: fireflyCount }, () => createFirefly(width, height)),
       }
@@ -141,7 +136,7 @@ function initializeState(
   }
 }
 
-// ============ Particle Types & Functions (existing) ============
+// ============ Particle Types & Functions ============
 
 interface Particle {
   x: number
@@ -199,14 +194,15 @@ function createParticle(width: number, height: number): Particle {
   return {
     x, y, baseX: x, baseY: y,
     size: Math.random() * 2.5 + 0.5,
-    speedX: (Math.random() - 0.5) * 0.15,
-    speedY: (Math.random() - 0.5) * 0.15 - 0.08,
+    // TUNED: Much faster base speed (was 0.15)
+    speedX: (Math.random() - 0.5) * 0.8 + (Math.random() > 0.5 ? 0.2 : -0.2),
+    speedY: (Math.random() - 0.5) * 0.6 - 0.3, // Stronger upward drift
     opacity: Math.random() * 0.5 + 0.3,
     hue, saturation, lightness,
     phase: Math.random() * Math.PI * 2,
-    pulseSpeed: 0.5 + Math.random() * 1.5,
-    orbitRadius: Math.random() * 30 + 10,
-    orbitSpeed: (Math.random() - 0.5) * 0.02,
+    pulseSpeed: 0.8 + Math.random() * 1.5,
+    orbitRadius: Math.random() * 20 + 8,
+    orbitSpeed: (Math.random() - 0.5) * 0.04,
   }
 }
 
@@ -214,12 +210,13 @@ function createOrb(width: number, height: number): Orb {
   return {
     x: Math.random() * width,
     y: Math.random() * height,
-    radius: 150 + Math.random() * 250,
+    radius: 150 + Math.random() * 200,
     hue: 220 + Math.random() * 60,
-    speedX: (Math.random() - 0.5) * 0.3,
-    speedY: (Math.random() - 0.5) * 0.3,
+    // TUNED: Faster orb movement
+    speedX: (Math.random() - 0.5) * 0.6,
+    speedY: (Math.random() - 0.5) * 0.6,
     pulsePhase: Math.random() * Math.PI * 2,
-    pulseSpeed: 0.2 + Math.random() * 0.3,
+    pulseSpeed: 0.3 + Math.random() * 0.4,
   }
 }
 
@@ -234,10 +231,12 @@ function drawParticles(
   drawConnections: boolean
 ): void {
   const { particles, connections } = state
+  // TUNED: Intensity now affects speed multiplier
+  const speedMultiplier = 0.6 + intensity * 0.8
   
   if (drawConnections) {
     connections.length = 0
-    const connectionDistance = 120 * intensity
+    const connectionDistance = 100 * intensity
     
     for (let i = 0; i < particles.length; i++) {
       for (let j = i + 1; j < particles.length; j++) {
@@ -257,8 +256,8 @@ function drawParticles(
       const p2 = particles[conn.to]
       
       const gradient = ctx.createLinearGradient(p1.x, p1.y, p2.x, p2.y)
-      gradient.addColorStop(0, `hsla(${p1.hue}, ${p1.saturation}%, ${p1.lightness}%, ${conn.opacity * p1.opacity * intensity * 0.3})`)
-      gradient.addColorStop(1, `hsla(${p2.hue}, ${p2.saturation}%, ${p2.lightness}%, ${conn.opacity * p2.opacity * intensity * 0.3})`)
+      gradient.addColorStop(0, `hsla(${p1.hue}, ${p1.saturation}%, ${p1.lightness}%, ${conn.opacity * p1.opacity * intensity * 0.25})`)
+      gradient.addColorStop(1, `hsla(${p2.hue}, ${p2.saturation}%, ${p2.lightness}%, ${conn.opacity * p2.opacity * intensity * 0.25})`)
       
       ctx.strokeStyle = gradient
       ctx.beginPath()
@@ -273,8 +272,9 @@ function drawParticles(
     const orbitX = Math.cos(time * particle.orbitSpeed + particle.phase) * particle.orbitRadius * 0.5
     const orbitY = Math.sin(time * particle.orbitSpeed * 0.7 + particle.phase) * particle.orbitRadius * 0.3
     
-    particle.baseX += particle.speedX
-    particle.baseY += particle.speedY
+    // TUNED: Apply speed multiplier based on intensity
+    particle.baseX += particle.speedX * speedMultiplier
+    particle.baseY += particle.speedY * speedMultiplier
     particle.x = particle.baseX + orbitX
     particle.y = particle.baseY + orbitY
     
@@ -298,10 +298,10 @@ function drawParticles(
     const sizeMultiplier = 1 + Math.sin(particle.phase * 1.3) * 0.2
     const currentSize = particle.size * sizeMultiplier
     
-    const glowSize = currentSize * 8
+    const glowSize = currentSize * 6
     const glowGradient = ctx.createRadialGradient(particle.x, particle.y, 0, particle.x, particle.y, glowSize)
-    glowGradient.addColorStop(0, `hsla(${particle.hue}, ${particle.saturation}%, ${particle.lightness}%, ${currentOpacity * 0.4})`)
-    glowGradient.addColorStop(0.4, `hsla(${particle.hue}, ${particle.saturation}%, ${particle.lightness}%, ${currentOpacity * 0.15})`)
+    glowGradient.addColorStop(0, `hsla(${particle.hue}, ${particle.saturation}%, ${particle.lightness}%, ${currentOpacity * 0.35})`)
+    glowGradient.addColorStop(0.4, `hsla(${particle.hue}, ${particle.saturation}%, ${particle.lightness}%, ${currentOpacity * 0.12})`)
     glowGradient.addColorStop(1, `hsla(${particle.hue}, ${particle.saturation}%, ${particle.lightness}%, 0)`)
     
     ctx.fillStyle = glowGradient
@@ -325,10 +325,12 @@ function drawConstellation(
   time: number,
   intensity: number
 ): void {
-  // Draw floating orbs first
+  const speedMultiplier = 0.6 + intensity * 0.8
+  
   state.orbs.forEach((orb: Orb) => {
-    orb.x += orb.speedX
-    orb.y += orb.speedY
+    // TUNED: Faster orb movement with intensity
+    orb.x += orb.speedX * speedMultiplier
+    orb.y += orb.speedY * speedMultiplier
     
     if (orb.x < -orb.radius || orb.x > width + orb.radius) orb.speedX *= -1
     if (orb.y < -orb.radius || orb.y > height + orb.radius) orb.speedY *= -1
@@ -341,20 +343,19 @@ function drawConstellation(
     if (orb.hue > 280) orb.hue = 220
     
     const gradient = ctx.createRadialGradient(orb.x, orb.y, 0, orb.x, orb.y, currentRadius)
-    gradient.addColorStop(0, `hsla(${orb.hue}, 50%, 35%, ${intensity * 0.15})`)
-    gradient.addColorStop(0.3, `hsla(${orb.hue}, 45%, 25%, ${intensity * 0.1})`)
-    gradient.addColorStop(0.6, `hsla(${orb.hue + 20}, 40%, 18%, ${intensity * 0.05})`)
+    gradient.addColorStop(0, `hsla(${orb.hue}, 50%, 35%, ${intensity * 0.12})`)
+    gradient.addColorStop(0.3, `hsla(${orb.hue}, 45%, 25%, ${intensity * 0.08})`)
+    gradient.addColorStop(0.6, `hsla(${orb.hue + 20}, 40%, 18%, ${intensity * 0.04})`)
     gradient.addColorStop(1, 'hsla(0, 0%, 0%, 0)')
     
     ctx.fillStyle = gradient
     ctx.fillRect(orb.x - currentRadius, orb.y - currentRadius, currentRadius * 2, currentRadius * 2)
   })
   
-  // Draw particles with connections
   drawParticles(ctx, state, width, height, mouse, time, intensity, true)
 }
 
-// ============ Geometric Effect ============
+// ============ Geometric Effect (TUNED: Much more subtle) ============
 
 interface HexNode {
   x: number
@@ -368,7 +369,8 @@ interface HexNode {
 
 function createHexGrid(width: number, height: number): HexNode[] {
   const nodes: HexNode[] = []
-  const spacing = 80
+  // TUNED: Much larger spacing = fewer nodes = less visual clutter
+  const spacing = 140
   const rowHeight = spacing * Math.sin(Math.PI / 3)
   
   for (let row = -1; row <= height / rowHeight + 1; row++) {
@@ -381,12 +383,11 @@ function createHexGrid(width: number, height: number): HexNode[] {
         baseY: row * rowHeight,
         connections: [],
         phase: Math.random() * Math.PI * 2,
-        pulseSpeed: 0.3 + Math.random() * 0.5,
+        pulseSpeed: 0.2 + Math.random() * 0.3, // Slower pulse
       })
     }
   }
   
-  // Find connections (nearby nodes)
   for (let i = 0; i < nodes.length; i++) {
     for (let j = i + 1; j < nodes.length; j++) {
       const dx = nodes[i].baseX - nodes[j].baseX
@@ -411,24 +412,23 @@ function drawGeometric(
   intensity: number
 ): void {
   const { nodes } = state
-  const waveSpeed = 0.5
-  const waveAmplitude = 15 * intensity
+  // TUNED: Much slower, subtler wave motion
+  const waveSpeed = 0.25
+  const waveAmplitude = 8 * intensity // Reduced from 15
   
-  // Update node positions with wave motion
-  nodes.forEach((node: HexNode, i: number) => {
-    node.phase += node.pulseSpeed * 0.01
+  nodes.forEach((node: HexNode) => {
+    node.phase += node.pulseSpeed * 0.008 // Slower
     
-    // Create flowing wave distortion
-    const waveX = Math.sin(time * waveSpeed + node.baseY * 0.01 + node.baseX * 0.005) * waveAmplitude
-    const waveY = Math.cos(time * waveSpeed * 0.7 + node.baseX * 0.01) * waveAmplitude * 0.5
+    const waveX = Math.sin(time * waveSpeed + node.baseY * 0.008 + node.baseX * 0.003) * waveAmplitude
+    const waveY = Math.cos(time * waveSpeed * 0.5 + node.baseX * 0.008) * waveAmplitude * 0.5
     
     node.x = node.baseX + waveX
     node.y = node.baseY + waveY
   })
   
-  // Draw connections
   const drawnConnections = new Set<string>()
   
+  // TUNED: Much more subtle lines
   nodes.forEach((node: HexNode, i: number) => {
     node.connections.forEach((j: number) => {
       const key = i < j ? `${i}-${j}` : `${j}-${i}`
@@ -439,12 +439,12 @@ function drawGeometric(
       const midX = (node.x + other.x) / 2
       const midY = (node.y + other.y) / 2
       
-      // Color based on position
-      const hue = 200 + Math.sin(time * 0.2 + midX * 0.003 + midY * 0.003) * 40
-      const brightness = 0.3 + Math.sin(time * 0.5 + node.phase) * 0.15
+      const hue = 220 + Math.sin(time * 0.15 + midX * 0.002 + midY * 0.002) * 30
+      // TUNED: Much lower opacity
+      const brightness = 0.1 + Math.sin(time * 0.3 + node.phase) * 0.05
       
-      ctx.strokeStyle = `hsla(${hue}, 60%, 50%, ${brightness * intensity})`
-      ctx.lineWidth = 1
+      ctx.strokeStyle = `hsla(${hue}, 40%, 50%, ${brightness * intensity})`
+      ctx.lineWidth = 0.5
       ctx.beginPath()
       ctx.moveTo(node.x, node.y)
       ctx.lineTo(other.x, other.y)
@@ -452,32 +452,32 @@ function drawGeometric(
     })
   })
   
-  // Draw nodes with glow
+  // TUNED: Smaller, subtler node glows
   nodes.forEach((node: HexNode) => {
-    const hue = 220 + Math.sin(time * 0.3 + node.phase) * 30
-    const pulse = Math.sin(node.phase) * 0.3 + 0.7
-    const size = 2 + pulse * 1.5
+    const hue = 220 + Math.sin(time * 0.2 + node.phase) * 20
+    const pulse = Math.sin(node.phase) * 0.2 + 0.5 // Lower base
+    const size = 1.5 + pulse * 0.8 // Smaller
     
-    // Glow
-    const glowGradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, size * 6)
-    glowGradient.addColorStop(0, `hsla(${hue}, 70%, 60%, ${pulse * intensity * 0.5})`)
-    glowGradient.addColorStop(0.5, `hsla(${hue}, 60%, 50%, ${pulse * intensity * 0.2})`)
-    glowGradient.addColorStop(1, `hsla(${hue}, 50%, 40%, 0)`)
+    // Subtle glow only
+    const glowGradient = ctx.createRadialGradient(node.x, node.y, 0, node.x, node.y, size * 4)
+    glowGradient.addColorStop(0, `hsla(${hue}, 50%, 60%, ${pulse * intensity * 0.3})`)
+    glowGradient.addColorStop(0.5, `hsla(${hue}, 40%, 50%, ${pulse * intensity * 0.1})`)
+    glowGradient.addColorStop(1, `hsla(${hue}, 30%, 40%, 0)`)
     
     ctx.fillStyle = glowGradient
     ctx.beginPath()
-    ctx.arc(node.x, node.y, size * 6, 0, Math.PI * 2)
+    ctx.arc(node.x, node.y, size * 4, 0, Math.PI * 2)
     ctx.fill()
     
-    // Core
-    ctx.fillStyle = `hsla(${hue}, 80%, 70%, ${pulse * intensity})`
+    // Tiny core
+    ctx.fillStyle = `hsla(${hue}, 60%, 70%, ${pulse * intensity * 0.6})`
     ctx.beginPath()
-    ctx.arc(node.x, node.y, size, 0, Math.PI * 2)
+    ctx.arc(node.x, node.y, size * 0.6, 0, Math.PI * 2)
     ctx.fill()
   })
 }
 
-// ============ Fireflies Effect ============
+// ============ Fireflies Effect (TUNED: Much slower blink) ============
 
 interface Firefly {
   x: number
@@ -499,7 +499,6 @@ function createFirefly(width: number, height: number): Firefly {
   const x = Math.random() * width
   const y = Math.random() * height
   
-  // Warm colors: yellows, warm whites, soft greens
   const colorChoice = Math.random()
   let hue
   if (colorChoice < 0.5) {
@@ -514,11 +513,12 @@ function createFirefly(width: number, height: number): Firefly {
     x, y,
     vx: 0,
     vy: 0,
-    size: 2 + Math.random() * 2,
+    size: 2 + Math.random() * 1.5,
     hue,
     phase: Math.random() * Math.PI * 2,
-    pulseSpeed: 1 + Math.random() * 2,
-    glowIntensity: 0.5 + Math.random() * 0.5,
+    // TUNED: Much slower pulse (was 1-3, now 0.15-0.35)
+    pulseSpeed: 0.15 + Math.random() * 0.2,
+    glowIntensity: 0.4 + Math.random() * 0.4,
     trail: [],
     targetX: x,
     targetY: y,
@@ -537,63 +537,57 @@ function drawFireflies(
   const { fireflies } = state
   
   fireflies.forEach((fly: Firefly) => {
-    // Update wander behavior
-    fly.wanderAngle += (Math.random() - 0.5) * 0.3
+    fly.wanderAngle += (Math.random() - 0.5) * 0.2
     
-    // Occasionally pick new target
-    if (Math.random() < 0.01) {
+    if (Math.random() < 0.008) {
       fly.targetX = Math.random() * width
       fly.targetY = Math.random() * height
     }
     
-    // Move towards target with wandering
     const dx = fly.targetX - fly.x
     const dy = fly.targetY - fly.y
     const dist = Math.sqrt(dx * dx + dy * dy)
     
     if (dist > 10) {
-      fly.vx += (dx / dist) * 0.05 + Math.cos(fly.wanderAngle) * 0.1
-      fly.vy += (dy / dist) * 0.05 + Math.sin(fly.wanderAngle) * 0.1
+      fly.vx += (dx / dist) * 0.03 + Math.cos(fly.wanderAngle) * 0.08
+      fly.vy += (dy / dist) * 0.03 + Math.sin(fly.wanderAngle) * 0.08
     } else {
-      fly.vx += Math.cos(fly.wanderAngle) * 0.15
-      fly.vy += Math.sin(fly.wanderAngle) * 0.15
+      fly.vx += Math.cos(fly.wanderAngle) * 0.1
+      fly.vy += Math.sin(fly.wanderAngle) * 0.1
     }
     
-    // Damping
-    fly.vx *= 0.95
-    fly.vy *= 0.95
+    fly.vx *= 0.96
+    fly.vy *= 0.96
     
-    // Clamp velocity
     const speed = Math.sqrt(fly.vx * fly.vx + fly.vy * fly.vy)
-    if (speed > 2) {
-      fly.vx = (fly.vx / speed) * 2
-      fly.vy = (fly.vy / speed) * 2
+    if (speed > 1.5) {
+      fly.vx = (fly.vx / speed) * 1.5
+      fly.vy = (fly.vy / speed) * 1.5
     }
     
     fly.x += fly.vx
     fly.y += fly.vy
     
-    // Wrap around
     if (fly.x < -50) fly.x = width + 50
     if (fly.x > width + 50) fly.x = -50
     if (fly.y < -50) fly.y = height + 50
     if (fly.y > height + 50) fly.y = -50
     
-    // Add to trail
     fly.trail.unshift({ x: fly.x, y: fly.y, opacity: 1 })
-    if (fly.trail.length > 20) fly.trail.pop()
+    if (fly.trail.length > 15) fly.trail.pop()
     
-    // Fade trail
     fly.trail.forEach((point, i) => {
       point.opacity = 1 - (i / fly.trail.length)
     })
     
-    // Update pulse
-    fly.phase += fly.pulseSpeed * 0.05
+    // TUNED: Much slower phase update
+    fly.phase += fly.pulseSpeed * 0.02
     
-    // Firefly pulse pattern: long dim, short bright flash
-    const pulseValue = Math.pow(Math.sin(fly.phase), 8) // Sharp peaks
-    const brightness = 0.2 + pulseValue * 0.8
+    // TUNED: Gentler pulse curve (less sharp peaks)
+    // Use a smoother sine wave instead of sharp power curve
+    const pulseRaw = Math.sin(fly.phase)
+    const pulseValue = pulseRaw > 0 ? Math.pow(pulseRaw, 2) : 0 // Only positive, softer curve
+    const brightness = 0.25 + pulseValue * 0.75
     
     // Draw trail
     if (fly.trail.length > 1) {
@@ -605,18 +599,18 @@ function drawFireflies(
         ctx.lineTo(point.x, point.y)
       }
       
-      ctx.strokeStyle = `hsla(${fly.hue}, 80%, 60%, ${brightness * intensity * 0.3})`
-      ctx.lineWidth = fly.size * 0.5
+      ctx.strokeStyle = `hsla(${fly.hue}, 70%, 55%, ${brightness * intensity * 0.2})`
+      ctx.lineWidth = fly.size * 0.4
       ctx.lineCap = 'round'
       ctx.stroke()
     }
     
     // Draw glow
-    const glowSize = fly.size * (8 + pulseValue * 12)
+    const glowSize = fly.size * (6 + pulseValue * 8)
     const glowGradient = ctx.createRadialGradient(fly.x, fly.y, 0, fly.x, fly.y, glowSize)
-    glowGradient.addColorStop(0, `hsla(${fly.hue}, 90%, 75%, ${brightness * intensity * fly.glowIntensity})`)
-    glowGradient.addColorStop(0.2, `hsla(${fly.hue}, 85%, 65%, ${brightness * intensity * fly.glowIntensity * 0.6})`)
-    glowGradient.addColorStop(0.5, `hsla(${fly.hue}, 80%, 55%, ${brightness * intensity * fly.glowIntensity * 0.2})`)
+    glowGradient.addColorStop(0, `hsla(${fly.hue}, 85%, 70%, ${brightness * intensity * fly.glowIntensity})`)
+    glowGradient.addColorStop(0.2, `hsla(${fly.hue}, 80%, 60%, ${brightness * intensity * fly.glowIntensity * 0.5})`)
+    glowGradient.addColorStop(0.5, `hsla(${fly.hue}, 75%, 50%, ${brightness * intensity * fly.glowIntensity * 0.15})`)
     glowGradient.addColorStop(1, `hsla(${fly.hue}, 70%, 45%, 0)`)
     
     ctx.fillStyle = glowGradient
@@ -625,21 +619,21 @@ function drawFireflies(
     ctx.fill()
     
     // Draw core
-    const coreSize = fly.size * (0.8 + pulseValue * 0.5)
-    ctx.fillStyle = `hsla(${fly.hue - 10}, 100%, 85%, ${brightness * intensity})`
+    const coreSize = fly.size * (0.7 + pulseValue * 0.4)
+    ctx.fillStyle = `hsla(${fly.hue - 10}, 95%, 80%, ${brightness * intensity})`
     ctx.beginPath()
     ctx.arc(fly.x, fly.y, coreSize, 0, Math.PI * 2)
     ctx.fill()
     
     // Bright center
-    ctx.fillStyle = `hsla(${fly.hue - 20}, 100%, 95%, ${brightness * intensity * 0.8})`
+    ctx.fillStyle = `hsla(${fly.hue - 20}, 100%, 92%, ${brightness * intensity * 0.7})`
     ctx.beginPath()
-    ctx.arc(fly.x, fly.y, coreSize * 0.4, 0, Math.PI * 2)
+    ctx.arc(fly.x, fly.y, coreSize * 0.35, 0, Math.PI * 2)
     ctx.fill()
   })
 }
 
-// ============ Nebula Effect ============
+// ============ Nebula Effect (unchanged - already good) ============
 
 interface Cloud {
   x: number
@@ -664,14 +658,13 @@ interface Star {
 }
 
 function createCloud(width: number, height: number, index: number): Cloud {
-  // Create varied nebula colors
   const palettes = [
-    { hue: 280, saturation: 60 }, // Purple
-    { hue: 320, saturation: 50 }, // Pink/magenta
-    { hue: 220, saturation: 70 }, // Deep blue
-    { hue: 200, saturation: 60 }, // Cyan-blue
-    { hue: 260, saturation: 55 }, // Violet
-    { hue: 340, saturation: 45 }, // Rose
+    { hue: 280, saturation: 60 },
+    { hue: 320, saturation: 50 },
+    { hue: 220, saturation: 70 },
+    { hue: 200, saturation: 60 },
+    { hue: 260, saturation: 55 },
+    { hue: 340, saturation: 45 },
   ]
   
   const palette = palettes[index % palettes.length]
@@ -701,7 +694,6 @@ function createStar(width: number, height: number): Star {
   }
 }
 
-// Simple noise function for organic cloud shapes
 function noise(x: number, y: number, time: number): number {
   const sin1 = Math.sin(x * 0.01 + time * 0.2)
   const sin2 = Math.sin(y * 0.01 + time * 0.15)
@@ -720,26 +712,20 @@ function drawNebula(
 ): void {
   const { clouds, stars } = state
   
-  // Draw clouds (layered for depth)
-  clouds.forEach((cloud: Cloud, i: number) => {
-    // Update position with slow drift
+  clouds.forEach((cloud: Cloud) => {
     cloud.x += cloud.speedX
     cloud.y += cloud.speedY
     
-    // Wrap around
     if (cloud.x < -cloud.radius) cloud.x = width + cloud.radius
     if (cloud.x > width + cloud.radius) cloud.x = -cloud.radius
     if (cloud.y < -cloud.radius) cloud.y = height + cloud.radius
     if (cloud.y > height + cloud.radius) cloud.y = -cloud.radius
     
-    // Calculate organic distortion
     const noiseVal = noise(cloud.x + cloud.noiseOffsetX, cloud.y + cloud.noiseOffsetY, time)
     const distortedRadius = cloud.radius * (1 + noiseVal * 0.3)
     
-    // Slowly shift hue
     cloud.hue += 0.01
     
-    // Draw cloud as multiple overlapping gradients for organic feel
     for (let layer = 0; layer < 3; layer++) {
       const layerOffset = layer * 20
       const layerRadius = distortedRadius * (1 - layer * 0.15)
@@ -765,13 +751,11 @@ function drawNebula(
     }
   })
   
-  // Draw stars
   stars.forEach((star: Star) => {
     star.twinklePhase += star.twinkleSpeed * 0.02
     const twinkle = Math.sin(star.twinklePhase) * 0.4 + 0.6
     const currentOpacity = star.opacity * twinkle * intensity
     
-    // Star glow
     const glowSize = star.size * 4
     const glowGradient = ctx.createRadialGradient(star.x, star.y, 0, star.x, star.y, glowSize)
     glowGradient.addColorStop(0, `hsla(220, 30%, 95%, ${currentOpacity * 0.6})`)
@@ -783,14 +767,12 @@ function drawNebula(
     ctx.arc(star.x, star.y, glowSize, 0, Math.PI * 2)
     ctx.fill()
     
-    // Star core
     ctx.fillStyle = `hsla(210, 20%, 98%, ${currentOpacity})`
     ctx.beginPath()
     ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2)
     ctx.fill()
   })
   
-  // Add subtle vignette
   const vignette = ctx.createRadialGradient(
     width / 2, height / 2, Math.min(width, height) * 0.2,
     width / 2, height / 2, Math.max(width, height) * 0.8
