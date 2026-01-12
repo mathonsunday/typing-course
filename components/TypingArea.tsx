@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useAtom, useSetAtom } from 'jotai'
 import { settingsAtom, saveSessionAtom } from '@/stores/progress'
 import { playKeystrokeSound, playErrorSound, playCompletionSound, ensureAudioReady } from '@/lib/sounds'
@@ -12,6 +12,9 @@ interface TypingAreaProps {
   onComplete?: () => void
   onReset?: () => void
 }
+
+// Number of lines to show at once
+const VISIBLE_LINES = 3
 
 export default function TypingArea({ text, onComplete, onReset }: TypingAreaProps) {
   const [settings] = useAtom(settingsAtom)
@@ -31,6 +34,59 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
   
   // Container ref for focus management
   const containerRef = useRef<HTMLDivElement>(null)
+  
+  // Split text into lines for windowed display
+  // We'll wrap text at ~60 characters per line
+  const lines = useMemo(() => {
+    const words = text.split(' ')
+    const result: { text: string; startIndex: number }[] = []
+    let currentLine = ''
+    let currentStartIndex = 0
+    let charCount = 0
+    
+    words.forEach((word, wordIndex) => {
+      const wordWithSpace = wordIndex === 0 ? word : ' ' + word
+      
+      if (currentLine.length + wordWithSpace.length > 55 && currentLine.length > 0) {
+        result.push({ text: currentLine, startIndex: currentStartIndex })
+        currentStartIndex = charCount
+        currentLine = word
+      } else {
+        currentLine += wordWithSpace
+      }
+      charCount += wordWithSpace.length
+    })
+    
+    if (currentLine) {
+      result.push({ text: currentLine, startIndex: currentStartIndex })
+    }
+    
+    return result
+  }, [text])
+  
+  // Determine which line the cursor is on and visible window
+  const currentLineIndex = useMemo(() => {
+    for (let i = lines.length - 1; i >= 0; i--) {
+      if (currentIndex >= lines[i].startIndex) {
+        return i
+      }
+    }
+    return 0
+  }, [currentIndex, lines])
+  
+  // Calculate visible line range (show current line and context)
+  const visibleRange = useMemo(() => {
+    // Keep current line in the middle when possible
+    let start = Math.max(0, currentLineIndex - 1)
+    let end = Math.min(lines.length, start + VISIBLE_LINES)
+    
+    // Adjust start if we're near the end
+    if (end - start < VISIBLE_LINES) {
+      start = Math.max(0, end - VISIBLE_LINES)
+    }
+    
+    return { start, end }
+  }, [currentLineIndex, lines.length])
   
   // Reset session
   const resetSession = useCallback(() => {
@@ -164,26 +220,31 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
     ? ((correctCountRef.current / currentIndex) * 100).toFixed(1)
     : '100.0'
   
-  // Render characters with appropriate styling
-  const renderText = () => {
-    return text.split('').map((char, index) => {
-      let className = 'char-pending'
-      
-      if (index < currentIndex) {
-        className = errors.has(index) ? 'char-error' : 'char-correct'
-      } else if (index === currentIndex) {
-        className = 'char-current'
-      }
-      
-      // Handle whitespace visibility
-      const displayChar = char === ' ' ? '\u00A0' : char
-      
-      return (
-        <span key={index} className={className}>
-          {displayChar}
-        </span>
-      )
-    })
+  // Render a single line with character styling
+  const renderLine = (line: { text: string; startIndex: number }, lineIndex: number) => {
+    return (
+      <div key={lineIndex} className="leading-relaxed">
+        {line.text.split('').map((char, charIndex) => {
+          const globalIndex = line.startIndex + charIndex
+          let className = 'char-pending'
+          
+          if (globalIndex < currentIndex) {
+            className = errors.has(globalIndex) ? 'char-error' : 'char-correct'
+          } else if (globalIndex === currentIndex) {
+            className = 'char-current'
+          }
+          
+          // Handle whitespace visibility
+          const displayChar = char === ' ' ? '\u00A0' : char
+          
+          return (
+            <span key={globalIndex} className={className}>
+              {displayChar}
+            </span>
+          )
+        })}
+      </div>
+    )
   }
   
   return (
@@ -202,7 +263,7 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
           <div>
             <span className="text-zinc-500">Progress</span>{' '}
             <span className="text-zinc-100 font-medium">
-              {currentIndex}/{text.length}
+              {currentLineIndex + 1}/{lines.length} lines
             </span>
           </div>
         </div>
@@ -218,12 +279,33 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
         ref={containerRef}
         tabIndex={0}
         onKeyDown={handleKeyDown}
-        className="relative bg-surface-raised rounded-xl p-8 border border-zinc-800 focus:border-accent/50 transition-colors cursor-text min-h-[200px]"
+        className="relative bg-surface-raised rounded-xl p-8 border border-zinc-800 focus:border-accent/50 transition-colors cursor-text"
         onClick={() => containerRef.current?.focus()}
       >
-        <div className="text-xl leading-relaxed tracking-wide font-mono">
-          {renderText()}
+        {/* Line container with fixed height for smooth scrolling feel */}
+        <div className="text-xl tracking-wide font-mono space-y-2 min-h-[140px]">
+          {lines.slice(visibleRange.start, visibleRange.end).map((line, idx) => 
+            renderLine(line, visibleRange.start + idx)
+          )}
         </div>
+        
+        {/* Line progress indicator */}
+        {lines.length > VISIBLE_LINES && (
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-1">
+            {lines.map((_, idx) => (
+              <div
+                key={idx}
+                className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                  idx < currentLineIndex 
+                    ? 'bg-correct' 
+                    : idx === currentLineIndex 
+                      ? 'bg-accent' 
+                      : 'bg-zinc-700'
+                }`}
+              />
+            ))}
+          </div>
+        )}
         
         {/* Click to focus hint */}
         {currentIndex === 0 && !startTime && (
@@ -250,6 +332,12 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
                   <div className="text-zinc-500 text-sm">Accuracy</div>
                   <div className="text-accent-bright font-semibold text-2xl">
                     {accuracy}%
+                  </div>
+                </div>
+                <div>
+                  <div className="text-zinc-500 text-sm">Characters</div>
+                  <div className="text-accent-bright font-semibold text-2xl">
+                    {text.length}
                   </div>
                 </div>
                 <div>
