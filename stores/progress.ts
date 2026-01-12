@@ -2,7 +2,8 @@
 
 import { atom } from 'jotai'
 import { atomWithStorage } from 'jotai/utils'
-import type { UserProgress, UserSettings, TypingSession, DailyProgress } from '@/lib/storage'
+import type { UserProgress, UserSettings, TypingSession, DailyProgress, SelfAssessmentLevel } from '@/lib/storage'
+import { GRADUATION_THRESHOLD, GRADUATION_WINDOW } from '@/lib/storage'
 
 function getTodayDateString(): string {
   return new Date().toISOString().split('T')[0]
@@ -137,6 +138,36 @@ export const saveSessionAtom = atom(
       aggregateCharacterAccuracy: newCharAccuracy,
       aggregateBigramAccuracy: newBigramAccuracy,
       dailyProgress,
+    })
+  }
+)
+
+// Action atom to update self-assessment on most recent session
+export const updateAssessmentAtom = atom(
+  null,
+  (get, set, assessment: SelfAssessmentLevel) => {
+    const progress = get(progressAtom)
+    
+    if (progress.sessions.length === 0) return
+    
+    // Update the most recent session
+    const newSessions = [...progress.sessions]
+    const lastIndex = newSessions.length - 1
+    newSessions[lastIndex] = {
+      ...newSessions[lastIndex],
+      selfAssessment: assessment,
+    }
+    
+    // Check if this triggers graduation
+    const assessedSessions = newSessions.filter(s => s.selfAssessment)
+    const recentSessions = assessedSessions.slice(-GRADUATION_WINDOW)
+    const readyCount = recentSessions.filter(s => s.selfAssessment === 'ready_for_work').length
+    const isGraduated = recentSessions.length >= GRADUATION_THRESHOLD && readyCount >= GRADUATION_THRESHOLD
+    
+    set(progressAtom, {
+      ...progress,
+      sessions: newSessions,
+      graduatedAt: isGraduated && !progress.graduatedAt ? Date.now() : progress.graduatedAt,
     })
   }
 )

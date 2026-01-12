@@ -1,7 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { SelfAssessmentLevel, updateSessionAssessment } from '@/lib/storage'
+import { useSetAtom } from 'jotai'
+import { updateAssessmentAtom } from '@/stores/progress'
+import type { SelfAssessmentLevel } from '@/lib/storage'
 
 interface SelfAssessmentProps {
   onAssessment?: (level: SelfAssessmentLevel) => void
@@ -36,11 +38,12 @@ const CONFIDENCE_OPTIONS: { level: SelfAssessmentLevel; label: string; descripti
 
 export default function SelfAssessment({ onAssessment }: SelfAssessmentProps) {
   const [selected, setSelected] = useState<SelfAssessmentLevel | null>(null)
+  const updateAssessment = useSetAtom(updateAssessmentAtom)
   
   const handleSelect = (level: SelfAssessmentLevel) => {
     setSelected(level)
-    // Save the assessment to the most recent session
-    updateSessionAssessment(level)
+    // Save the assessment to the most recent session (via Jotai atom)
+    updateAssessment(level)
     onAssessment?.(level)
   }
   
