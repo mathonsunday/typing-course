@@ -7,6 +7,7 @@ import type { UserProgress, UserSettings, TypingSession } from '@/lib/storage'
 // Default values
 const DEFAULT_SETTINGS: UserSettings = {
   showFingerGuide: true,
+  fingerGuideMode: 'text',
   darkMode: true,
   adaptiveModeEnabled: false,
   soundEnabled: true,

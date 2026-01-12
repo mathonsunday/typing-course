@@ -20,8 +20,11 @@ export interface TypingSession {
   bigramAccuracy: Record<string, CharacterStats>
 }
 
+export type FingerGuideMode = 'hands' | 'text' | 'keyboard'
+
 export interface UserSettings {
   showFingerGuide: boolean
+  fingerGuideMode: FingerGuideMode
   darkMode: boolean
   adaptiveModeEnabled: boolean
   soundEnabled: boolean
@@ -40,6 +43,7 @@ const STORAGE_KEY = 'typing-course-progress'
 
 const DEFAULT_SETTINGS: UserSettings = {
   showFingerGuide: true,
+  fingerGuideMode: 'text',
   darkMode: true,
   adaptiveModeEnabled: false,
   soundEnabled: true,

@@ -1,5 +1,7 @@
 'use client'
 
+import HandDiagram from './HandDiagram'
+
 // Finger-to-key mapping for standard QWERTY touch typing
 // Each finger is assigned a color for visual distinction
 const FINGER_COLORS = {
@@ -12,6 +14,22 @@ const FINGER_COLORS = {
   rightRing: '#f97316',    // orange
   rightPinky: '#ef4444',   // red
   thumb: '#6366f1',        // purple (space bar)
+}
+
+export type FingerGuideMode = 'hands' | 'text' | 'keyboard'
+
+// Map finger names to hand/finger index for HandDiagram
+// Finger indices: 0=thumb, 1=index, 2=middle, 3=ring, 4=pinky
+const FINGER_TO_HAND_INDEX: Record<keyof typeof FINGER_COLORS, { hand: 'left' | 'right'; finger: number }> = {
+  leftPinky: { hand: 'left', finger: 4 },
+  leftRing: { hand: 'left', finger: 3 },
+  leftMiddle: { hand: 'left', finger: 2 },
+  leftIndex: { hand: 'left', finger: 1 },
+  rightIndex: { hand: 'right', finger: 1 },
+  rightMiddle: { hand: 'right', finger: 2 },
+  rightRing: { hand: 'right', finger: 3 },
+  rightPinky: { hand: 'right', finger: 4 },
+  thumb: { hand: 'right', finger: 0 }, // Either thumb works for space
 }
 
 // Map each key to its correct finger
@@ -70,30 +88,85 @@ const KEYBOARD_ROWS = [
 
 interface FingerGuideProps {
   currentChar?: string
-  showFullKeyboard?: boolean
+  mode?: FingerGuideMode
+  showInline?: boolean // For the compact stats bar display
 }
 
-export default function FingerGuide({ currentChar, showFullKeyboard = false }: FingerGuideProps) {
+// Get finger name for display
+const getFingerName = (finger: keyof typeof FINGER_COLORS): string => {
+  const names: Record<keyof typeof FINGER_COLORS, string> = {
+    leftPinky: 'Left Pinky',
+    leftRing: 'Left Ring',
+    leftMiddle: 'Left Middle',
+    leftIndex: 'Left Index',
+    rightIndex: 'Right Index',
+    rightMiddle: 'Right Middle',
+    rightRing: 'Right Ring',
+    rightPinky: 'Right Pinky',
+    thumb: 'Thumb',
+  }
+  return names[finger]
+}
+
+export default function FingerGuide({ currentChar, mode = 'text', showInline = false }: FingerGuideProps) {
   const currentFinger = currentChar ? KEY_TO_FINGER[currentChar] : undefined
   const fingerColor = currentFinger ? FINGER_COLORS[currentFinger] : undefined
+  const handIndex = currentFinger ? FINGER_TO_HAND_INDEX[currentFinger] : undefined
   
-  // Get finger name for display
-  const getFingerName = (finger: keyof typeof FINGER_COLORS): string => {
-    const names: Record<keyof typeof FINGER_COLORS, string> = {
-      leftPinky: 'Left Pinky',
-      leftRing: 'Left Ring',
-      leftMiddle: 'Left Middle',
-      leftIndex: 'Left Index',
-      rightIndex: 'Right Index',
-      rightMiddle: 'Right Middle',
-      rightRing: 'Right Ring',
-      rightPinky: 'Right Pinky',
-      thumb: 'Thumb',
-    }
-    return names[finger]
+  // Inline display for stats bar (always text-based, compact)
+  if (showInline) {
+    if (!currentChar) return null
+    
+    return (
+      <div className="flex items-center gap-2 text-sm">
+        <span 
+          className="px-2 py-0.5 rounded font-medium text-white"
+          style={{ backgroundColor: fingerColor || '#6366f1' }}
+        >
+          {currentFinger ? getFingerName(currentFinger) : 'Thumb'}
+        </span>
+      </div>
+    )
   }
   
-  if (showFullKeyboard) {
+  // MODE: Text only - minimal, just shows the finger name prominently
+  if (mode === 'text') {
+    if (!currentChar) return null
+    
+    return (
+      <div className="bg-surface-raised rounded-xl p-6 border border-zinc-800">
+        <div className="text-center">
+          <div className="text-zinc-500 text-sm mb-2">Use your</div>
+          <div 
+            className="text-3xl font-semibold mb-2"
+            style={{ color: fingerColor || '#6366f1' }}
+          >
+            {currentFinger ? getFingerName(currentFinger) : 'Thumb'}
+          </div>
+          <div className="text-zinc-500 text-sm">
+            to type <span className="font-mono text-zinc-300 bg-surface px-2 py-1 rounded ml-1">
+              {currentChar === ' ' ? '␣' : currentChar}
+            </span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+  
+  // MODE: Hands - show hand diagrams with highlighted finger
+  if (mode === 'hands') {
+    return (
+      <div className="bg-surface-raised rounded-xl p-4 border border-zinc-800">
+        <HandDiagram 
+          activeHand={handIndex?.hand || null}
+          activeFinger={handIndex?.finger ?? null}
+        />
+      </div>
+    )
+  }
+  
+  // MODE: Keyboard - color-coded keyboard visualization
+  if (mode === 'keyboard') {
     return (
       <div className="bg-surface-raised rounded-xl p-4 border border-zinc-800">
         <h3 className="text-sm font-medium text-zinc-400 mb-3">Finger Placement Guide</h3>
@@ -165,26 +238,7 @@ export default function FingerGuide({ currentChar, showFullKeyboard = false }: F
     )
   }
   
-  // Compact inline display showing current key's finger
-  if (!currentChar || currentChar === ' ') {
-    return null
-  }
-  
-  return (
-    <div className="flex items-center gap-2 text-sm">
-      <span className="text-zinc-500">Use:</span>
-      <span 
-        className="px-2 py-0.5 rounded font-medium"
-        style={{ backgroundColor: fingerColor, color: 'white' }}
-      >
-        {currentFinger ? getFingerName(currentFinger) : '?'}
-      </span>
-      <span className="text-zinc-600">for</span>
-      <span className="font-mono text-zinc-300 bg-surface px-2 py-0.5 rounded">
-        {currentChar}
-      </span>
-    </div>
-  )
+  return null
 }
 
 // Export the mapping for use in other components
