@@ -32,6 +32,7 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
   const [elapsedMs, setElapsedMs] = useState(0)
   const [lastKeystrokeTime, setLastKeystrokeTime] = useState<number | null>(null)
   const [isIdle, setIsIdle] = useState(false)
+  const [debugInfo, setDebugInfo] = useState<{ char: string; composing: boolean; timestamp: number } | null>(null)
   
   // Idle timeout in ms (5 seconds)
   const IDLE_TIMEOUT = 5000
@@ -197,18 +198,23 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
   }, [isComplete, resetSession, onReset, currentIndex])
   
   // Handle composition events (for dead key / accent input)
-  const handleCompositionStart = useCallback(() => {
+  const handleCompositionStart = useCallback((e: React.CompositionEvent<HTMLInputElement>) => {
     isComposingRef.current = true
+    setDebugInfo({ char: `composing: "${e.data || '?'}"`, composing: true, timestamp: Date.now() })
   }, [])
   
-  const handleCompositionEnd = useCallback(() => {
+  const handleCompositionEnd = useCallback((e: React.CompositionEvent<HTMLInputElement>) => {
     isComposingRef.current = false
+    setDebugInfo({ char: `composed: "${e.data}"`, composing: false, timestamp: Date.now() })
   }, [])
   
   // Handle actual character input (supports dead keys / accent composition)
   const handleInput = useCallback(async (e: React.FormEvent<HTMLInputElement>) => {
     // Skip if we're in the middle of composition (dead key waiting for next char)
-    if (isComposingRef.current) return
+    if (isComposingRef.current) {
+      setDebugInfo({ char: `(skipped - composing)`, composing: true, timestamp: Date.now() })
+      return
+    }
     
     const input = e.currentTarget
     const typedChar = input.value
@@ -221,6 +227,9 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
     
     // Take only the last character (in case multiple accumulated)
     const char = typedChar.slice(-1)
+    
+    // Debug: show what we received
+    setDebugInfo({ char: `received: "${char}" (code: ${char.charCodeAt(0)})`, composing: false, timestamp: Date.now() })
     
     if (isComplete) return
     
@@ -464,6 +473,19 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
           style={{ width: `${(currentIndex / text.length) * 100}%` }}
         />
       </div>
+      
+      {/* Debug info for accent input troubleshooting */}
+      {debugInfo && (
+        <div className="mt-3 px-3 py-2 bg-zinc-900 border border-zinc-700 rounded-lg text-xs font-mono">
+          <span className="text-zinc-500">Debug: </span>
+          <span className={debugInfo.composing ? 'text-yellow-400' : 'text-green-400'}>
+            {debugInfo.char}
+          </span>
+          <span className="text-zinc-600 ml-2">
+            | Expected: "{text[currentIndex]}" (code: {text[currentIndex]?.charCodeAt(0)})
+          </span>
+        </div>
+      )}
       
       {/* Spanish accent hint */}
       {!isComplete && (
