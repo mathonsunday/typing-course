@@ -21,6 +21,8 @@ export interface TypingSession {
 }
 
 export type FingerGuideMode = 'hands' | 'text' | 'keyboard'
+export type KeyboardSoundProfile = 'mxBrown' | 'mxBlue' | 'thocky' | 'typewriter' | 'bubble' | 'minimal' | 'none'
+export type AmbianceStyle = 'none' | 'particles' | 'gradient' | 'both'
 
 export interface UserSettings {
   showFingerGuide: boolean
@@ -29,6 +31,9 @@ export interface UserSettings {
   adaptiveModeEnabled: boolean
   soundEnabled: boolean
   soundVolume: number // 0-1
+  soundProfile: KeyboardSoundProfile
+  ambianceStyle: AmbianceStyle
+  ambianceIntensity: number // 0-1
   customTextLibrary: string[]
 }
 
@@ -50,11 +55,14 @@ const STORAGE_KEY = 'typing-course-progress'
 
 const DEFAULT_SETTINGS: UserSettings = {
   showFingerGuide: true,
-  fingerGuideMode: 'text',
+  fingerGuideMode: 'hands',
   darkMode: true,
   adaptiveModeEnabled: false,
   soundEnabled: true,
-  soundVolume: 0.3,
+  soundVolume: 0.5,
+  soundProfile: 'mxBrown',
+  ambianceStyle: 'both',
+  ambianceIntensity: 0.5,
   customTextLibrary: [],
 }
 

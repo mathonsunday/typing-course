@@ -11,6 +11,22 @@ interface SettingsPanelProps {
 
 const GOAL_OPTIONS = [5, 10, 15, 20, 30, 45, 60]
 
+const SOUND_PROFILES = [
+  { id: 'mxBrown', name: 'MX Brown', desc: 'Soft tactile' },
+  { id: 'mxBlue', name: 'MX Blue', desc: 'Clicky' },
+  { id: 'thocky', name: 'Thocky', desc: 'Deep bass' },
+  { id: 'typewriter', name: 'Typewriter', desc: 'Classic' },
+  { id: 'bubble', name: 'Bubble', desc: 'Playful' },
+  { id: 'minimal', name: 'Minimal', desc: 'Subtle' },
+] as const
+
+const AMBIANCE_STYLES = [
+  { id: 'none', name: 'None' },
+  { id: 'particles', name: 'Particles' },
+  { id: 'gradient', name: 'Gradient' },
+  { id: 'both', name: 'Both' },
+] as const
+
 export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const [settings, setSettings] = useAtom(settingsAtom)
   const [progress, setProgress] = useAtom(progressAtom)
@@ -120,24 +136,48 @@ export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
             </button>
           </div>
           
-          {/* Volume slider */}
+          {/* Sound settings (when enabled) */}
           {settings.soundEnabled && (
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-sm font-medium text-zinc-100">Volume</div>
-                <div className="text-xs text-zinc-500">
-                  {Math.round(settings.soundVolume * 100)}%
+            <>
+              {/* Volume slider */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-sm font-medium text-zinc-100">Volume</div>
+                  <div className="text-xs text-zinc-500">
+                    {Math.round(settings.soundVolume * 100)}%
+                  </div>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={settings.soundVolume * 100}
+                  onChange={(e) => setSettings({ soundVolume: Number(e.target.value) / 100 })}
+                  className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-accent"
+                />
+              </div>
+              
+              {/* Sound profile selector */}
+              <div>
+                <div className="text-sm font-medium text-zinc-100 mb-2">Keyboard sound</div>
+                <div className="grid grid-cols-3 gap-2">
+                  {SOUND_PROFILES.map(({ id, name, desc }) => (
+                    <button
+                      key={id}
+                      onClick={() => setSettings({ soundProfile: id as any })}
+                      className={`px-2 py-2 rounded-lg text-xs transition-colors ${
+                        settings.soundProfile === id
+                          ? 'bg-accent text-white'
+                          : 'bg-surface text-zinc-400 hover:bg-zinc-800'
+                      }`}
+                    >
+                      <div className="font-medium">{name}</div>
+                      <div className="text-zinc-500 text-[10px]">{desc}</div>
+                    </button>
+                  ))}
                 </div>
               </div>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={settings.soundVolume * 100}
-                onChange={(e) => setSettings({ soundVolume: Number(e.target.value) / 100 })}
-                className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-accent"
-              />
-            </div>
+            </>
           )}
           
           {/* Finger guide toggle */}
@@ -185,6 +225,45 @@ export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
               </div>
             </div>
           )}
+          
+          {/* Visual ambiance */}
+          <div className="pt-4 border-t border-zinc-800">
+            <div className="text-sm font-medium text-zinc-100 mb-2">Visual ambiance</div>
+            <div className="flex gap-2 mb-3">
+              {AMBIANCE_STYLES.map(({ id, name }) => (
+                <button
+                  key={id}
+                  onClick={() => setSettings({ ambianceStyle: id as any })}
+                  className={`flex-1 px-3 py-2 rounded-lg text-sm transition-colors ${
+                    settings.ambianceStyle === id
+                      ? 'bg-accent text-white'
+                      : 'bg-surface text-zinc-400 hover:bg-zinc-800'
+                  }`}
+                >
+                  {name}
+                </button>
+              ))}
+            </div>
+            
+            {settings.ambianceStyle !== 'none' && (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-xs text-zinc-400">Intensity</div>
+                  <div className="text-xs text-zinc-500">
+                    {Math.round(settings.ambianceIntensity * 100)}%
+                  </div>
+                </div>
+                <input
+                  type="range"
+                  min="10"
+                  max="100"
+                  value={settings.ambianceIntensity * 100}
+                  onChange={(e) => setSettings({ ambianceIntensity: Number(e.target.value) / 100 })}
+                  className="w-full h-2 bg-zinc-700 rounded-lg appearance-none cursor-pointer accent-accent"
+                />
+              </div>
+            )}
+          </div>
         </div>
         
         {/* Data management */}

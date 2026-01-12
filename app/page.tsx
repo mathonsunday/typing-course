@@ -7,15 +7,24 @@ import TextInput from '@/components/TextInput'
 import SettingsPanel from '@/components/SettingsPanel'
 import SessionStats from '@/components/SessionStats'
 import DailyGoal from '@/components/DailyGoal'
+import VisualAmbiance from '@/components/VisualAmbiance'
+import { useAtom } from 'jotai'
+import { settingsAtom } from '@/stores/progress'
 
 function TypingApp() {
   const [practiceText, setPracticeText] = useState<string | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [settings] = useAtom(settingsAtom)
   
   return (
-    <main className="min-h-screen bg-surface">
+    <main className="min-h-screen bg-surface relative">
+      {/* Visual ambiance background */}
+      <VisualAmbiance 
+        style={settings.ambianceStyle || 'none'} 
+        intensity={settings.ambianceIntensity || 0.5} 
+      />
       {/* Header */}
-      <header className="border-b border-zinc-800">
+      <header className="border-b border-zinc-800 relative z-10">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-semibold text-zinc-100">Typing Course</h1>
@@ -35,7 +44,7 @@ function TypingApp() {
       </header>
       
       {/* Main content */}
-      <div className="max-w-5xl mx-auto px-6 py-12">
+      <div className="max-w-5xl mx-auto px-6 py-12 relative z-10">
         {/* Daily goal - shown on home screen */}
         {!practiceText && (
           <div className="max-w-4xl mx-auto mb-8">
