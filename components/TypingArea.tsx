@@ -127,7 +127,7 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
     correctCountRef.current = 0
     activeTimeRef.current = 0
     lastTickRef.current = null
-    containerRef.current?.focus()
+    hiddenInputRef.current?.focus()
   }, [])
   
   // Reset when text changes
@@ -161,10 +161,12 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
     return () => clearInterval(interval)
   }, [startTime, isComplete, lastKeystrokeTime, IDLE_TIMEOUT])
   
-  // Handle keypress
+  // Reference for hidden input that handles dead key composition
+  const hiddenInputRef = useRef<HTMLInputElement>(null)
+  
+  // Handle special keys (backspace, enter, etc.)
   const handleKeyDown = useCallback(async (e: React.KeyboardEvent) => {
-    // Ignore modifier keys and special keys
-    if (e.metaKey || e.ctrlKey || e.altKey) return
+    // Ignore modifier-only presses and navigation
     if (e.key === 'Tab' || e.key === 'Escape') return
     
     // Handle restart with Enter when complete
@@ -175,9 +177,6 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
     }
     
     if (isComplete) return
-    
-    // Ensure audio is ready (browser autoplay policy)
-    await ensureAudioReady()
     
     // Handle backspace
     if (e.key === 'Backspace') {
@@ -193,11 +192,27 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
       }
       return
     }
+  }, [isComplete, resetSession, onReset, currentIndex])
+  
+  // Handle actual character input (supports dead keys / accent composition)
+  const handleBeforeInput = useCallback(async (e: React.FormEvent<HTMLInputElement>) => {
+    const inputEvent = e.nativeEvent as InputEvent
+    const typedChar = inputEvent.data
     
-    // Ignore other special keys
-    if (e.key.length !== 1) return
+    // Ignore if no character data (e.g., delete operations)
+    if (!typedChar || typedChar.length !== 1) return
     
     e.preventDefault()
+    
+    // Clear the hidden input to prevent accumulation
+    if (hiddenInputRef.current) {
+      hiddenInputRef.current.value = ''
+    }
+    
+    if (isComplete) return
+    
+    // Ensure audio is ready (browser autoplay policy)
+    await ensureAudioReady()
     
     const now = Date.now()
     
@@ -216,7 +231,6 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
     }
     
     const expectedChar = text[currentIndex]
-    const typedChar = e.key
     const prevChar = currentIndex > 0 ? text[currentIndex - 1] : null
     
     // Track analytics
@@ -267,7 +281,7 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
       saveSession(session)
       onComplete?.()
     }
-  }, [currentIndex, text, startTime, isComplete, isIdle, settings, saveSession, onComplete, onReset, resetSession])
+  }, [currentIndex, text, startTime, isComplete, isIdle, settings, saveSession, onComplete])
   
   // Calculate current accuracy
   const accuracy = currentIndex > 0 
@@ -340,11 +354,21 @@ export default function TypingArea({ text, onComplete, onReset }: TypingAreaProp
       {/* Typing area */}
       <div
         ref={containerRef}
-        tabIndex={0}
-        onKeyDown={handleKeyDown}
-        className="relative bg-surface-raised rounded-xl p-8 border border-zinc-800 focus:border-accent/50 transition-colors cursor-text"
-        onClick={() => containerRef.current?.focus()}
+        className="relative bg-surface-raised rounded-xl p-8 border border-zinc-800 focus-within:border-accent/50 transition-colors cursor-text"
+        onClick={() => hiddenInputRef.current?.focus()}
       >
+        {/* Hidden input for proper dead key / accent composition support */}
+        <input
+          ref={hiddenInputRef}
+          type="text"
+          className="absolute opacity-0 w-0 h-0 pointer-events-none"
+          onKeyDown={handleKeyDown}
+          onBeforeInput={handleBeforeInput}
+          autoComplete="off"
+          autoCapitalize="off"
+          autoCorrect="off"
+          spellCheck={false}
+        />
         {/* Line container with fixed height for smooth scrolling feel */}
         <div className="text-xl tracking-wide font-mono space-y-2 min-h-[140px]">
           {lines.slice(visibleRange.start, visibleRange.end).map((line, idx) => 
